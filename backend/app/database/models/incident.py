@@ -6,8 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database.base import Base
 
 
-class Alert(Base):
-    __tablename__ = "alerts"
+class Incident(Base):
+    __tablename__ = "incidents"
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -15,26 +15,14 @@ class Alert(Base):
         index=True,
     )
 
-    # alert_id: Mapped[str] = mapped_column(
-    #     String(36),
-    #     unique=True,
-    #     nullable=False,
-    #     index=True,
-    # )
-    alert_id: Mapped[str] = mapped_column(
-    String(100),
-    unique=True,
-    nullable=False,
-    index=True,
-    )
-
-    rule_id: Mapped[str] = mapped_column(
+    incident_id: Mapped[str] = mapped_column(
         String(100),
+        unique=True,
         nullable=False,
         index=True,
     )
 
-    rule_name: Mapped[str] = mapped_column(
+    title: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
     )
@@ -50,21 +38,10 @@ class Alert(Base):
         index=True,
     )
 
-    event_id: Mapped[str] = mapped_column(
-        String(255),
+    status: Mapped[str] = mapped_column(
+        String(30),
         nullable=False,
-        index=True,
-    )
-
-    event_name: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
-    )
-
-    detection_key: Mapped[str | None] = mapped_column(
-        String(255),
-        unique=True,
-        nullable=True,
+        default="open",
         index=True,
     )
 
@@ -85,11 +62,6 @@ class Alert(Base):
         nullable=True,
     )
 
-    service: Mapped[str | None] = mapped_column(
-        String(100),
-        nullable=True,
-    )
-
     source_ip: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,
@@ -102,17 +74,22 @@ class Alert(Base):
         index=True,
     )
 
-    incident_id: Mapped[str | None] = mapped_column(
+    correlation_rule_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
     )
 
-    status: Mapped[str] = mapped_column(
-        String(30),
+    alert_ids: Mapped[list] = mapped_column(
+        JSON,
         nullable=False,
-        default="open",
-        index=True,
+        default=list,
+    )
+
+    event_ids: Mapped[list] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list,
     )
 
     mitre_tactic: Mapped[str | None] = mapped_column(
@@ -140,14 +117,18 @@ class Alert(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(
+            timezone.utc
+        ),
         index=True,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(
+            timezone.utc
+        ),
     )
 
     acknowledged_at: Mapped[datetime | None] = mapped_column(

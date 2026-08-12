@@ -76,3 +76,116 @@ def test_duplicate_alert_is_not_saved_twice(
     assert len(
         service.get_all_alerts()
     ) == 1
+
+
+def test_get_alert_by_id(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    service.save_alert(
+        build_alert("alert-001")
+    )
+
+    alert = service.get_alert("alert-001")
+
+    assert alert is not None
+    assert alert.alert_id == "alert-001"
+
+
+def test_get_missing_alert_returns_none(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    alert = service.get_alert("does-not-exist")
+
+    assert alert is None
+
+
+def test_acknowledge_alert(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    service.save_alert(
+        build_alert("alert-001")
+    )
+
+    alert = service.acknowledge_alert(
+        "alert-001"
+    )
+
+    assert alert is not None
+    assert alert.status == "acknowledged"
+    assert alert.acknowledged_at is not None
+
+    stored = service.get_alert("alert-001")
+
+    assert stored is not None
+    assert stored.status == "acknowledged"
+
+
+def test_investigate_alert(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    service.save_alert(
+        build_alert("alert-001")
+    )
+
+    alert = service.investigate_alert(
+        "alert-001"
+    )
+
+    assert alert is not None
+    assert alert.status == "investigating"
+
+
+def test_resolve_alert(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    service.save_alert(
+        build_alert("alert-001")
+    )
+
+    alert = service.resolve_alert(
+        "alert-001"
+    )
+
+    assert alert is not None
+    assert alert.status == "resolved"
+    assert alert.resolved_at is not None
+
+
+def test_mark_alert_false_positive(tmp_path):
+    store = JsonAlertStore(
+        str(tmp_path / "alerts.jsonl")
+    )
+
+    service = AlertService(store)
+
+    service.save_alert(
+        build_alert("alert-001")
+    )
+
+    alert = service.mark_false_positive(
+        "alert-001"
+    )
+
+    assert alert is not None
+    assert alert.status == "false_positive"
+    assert alert.resolved_at is not None

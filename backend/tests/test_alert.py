@@ -80,3 +80,34 @@ def test_alert_status_defaults_to_open():
     )
 
     assert alert.status == "open"
+
+
+def test_alert_severity_is_validated():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Alert(
+            rule_id="TEST-001",
+            rule_name="Invalid Severity",
+            severity="super-dangerous",
+            event_id="event-001",
+            event_name="TestEvent",
+            cloud_provider="aws",
+        )
+
+
+def test_alert_status_is_validated():
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Alert(
+            rule_id="TEST-002",
+            rule_name="Invalid Status",
+            severity="low",
+            status="random-status",
+            event_id="event-002",
+            event_name="TestEvent",
+            cloud_provider="aws",
+        )
