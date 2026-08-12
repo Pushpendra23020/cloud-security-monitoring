@@ -1,35 +1,40 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
+
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
 class CloudAccount(Base):
-
     __tablename__ = "cloud_accounts"
 
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
-    provider = Column(
-        String,
-        nullable=False
+    provider: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        index=True,
     )
 
-    account_id = Column(
-        String,
+    account_id: Mapped[str] = mapped_column(
+        String(100),
         unique=True,
-        nullable=False
+        nullable=False,
+        index=True,
     )
 
-    region = Column(
-        String
+    region: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
     )
 
-    created_at = Column(
-        DateTime,
-        default=datetime.utcnow
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )

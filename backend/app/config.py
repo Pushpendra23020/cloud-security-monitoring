@@ -8,9 +8,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
 
-    AWS_ACCESS_KEY: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "ap-south-1"
+    AWS_PROFILE: str | None = None
 
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
@@ -18,8 +17,10 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_file=".env",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore",
     )
 
 
 settings = Settings()
+

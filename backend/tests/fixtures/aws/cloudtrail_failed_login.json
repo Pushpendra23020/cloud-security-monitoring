@@ -1,0 +1,19 @@
+{
+  "eventVersion": "1.08",
+  "userIdentity": {
+    "type": "IAMUser",
+    "principalId": "AIDAFAILEDUSER",
+    "arn": "arn:aws:iam::123456789012:user/test-user",
+    "accountId": "123456789012",
+    "userName": "test-user"
+  },
+  "eventTime": "2026-08-08T13:00:00Z",
+  "eventSource": "signin.amazonaws.com",
+  "eventName": "ConsoleLogin",
+  "awsRegion": "us-east-1",
+  "sourceIPAddress": "198.51.100.25",
+  "eventType": "AwsConsoleSignIn",
+  "eventID": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "errorCode": "FailedAuthentication",
+  "errorMessage": "Authentication failed"
+}

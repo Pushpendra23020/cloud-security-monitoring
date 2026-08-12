@@ -5,3 +5,17 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .coverage
+# Runtime security data
+data/alerts/*.jsonl
+data/normalized/*.jsonl
+data/checkpoints/*.json
+data/checkpoints/**/*.json
+
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
