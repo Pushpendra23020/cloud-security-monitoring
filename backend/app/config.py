@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Alert notification configuration
+    ALERT_CONSOLE_NOTIFICATIONS: bool = True
+
+    ALERT_WEBHOOK_ENABLED: bool = False
+    ALERT_WEBHOOK_URL: str | None = None
+    ALERT_WEBHOOK_TIMEOUT: float = 5.0
+    ALERT_WEBHOOK_MAX_ATTEMPTS: int = 3
+    ALERT_WEBHOOK_BACKOFF_SECONDS: float = 1.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

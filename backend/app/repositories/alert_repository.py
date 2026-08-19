@@ -73,3 +73,11 @@ class AlertRepository(ABC):
         detection_key: str,
     ) -> bool:
         raise NotImplementedError
+
+
+    @abstractmethod
+    def get_by_fingerprint(
+        self,
+        fingerprint: str,
+    ) -> Optional[Alert]:
+        raise NotImplementedError

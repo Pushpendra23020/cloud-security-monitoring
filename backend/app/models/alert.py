@@ -22,6 +22,13 @@ class AlertStatus(str, Enum):
     FALSE_POSITIVE = "false_positive"
 
 
+class NotificationStatus(str, Enum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+    SUPPRESSED = "suppressed"
+
+
 class Alert(BaseModel):
     model_config = ConfigDict(
         validate_assignment=True
@@ -41,6 +48,14 @@ class Alert(BaseModel):
 
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
+
+    first_seen_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    last_seen_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
     # Detection rule information
     rule_id: str
@@ -63,11 +78,26 @@ class Alert(BaseModel):
     user_identity: Optional[str] = None
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
+
     # Correlation / incident information
     incident_id: Optional[str] = None
 
     # Alert lifecycle
     status: AlertStatus = AlertStatus.OPEN
+
+    # Deduplication / aggregation
+    fingerprint: Optional[str] = None
+    occurrence_count: int = Field(
+        default=1,
+        ge=1,
+    )
+
+    # Notification lifecycle
+    notification_status: NotificationStatus = (
+        NotificationStatus.PENDING
+    )
+    last_notified_at: Optional[datetime] = None
+    suppressed_until: Optional[datetime] = None
 
     # MITRE ATT&CK metadata
     mitre_tactic: Optional[str] = None

@@ -3,7 +3,11 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.alert import AlertSeverity, AlertStatus
+from app.models.alert import (
+    AlertSeverity,
+    AlertStatus,
+    NotificationStatus,
+)
 
 
 class AlertResponse(BaseModel):
@@ -49,6 +53,10 @@ class AlertResponse(BaseModel):
     acknowledged_at: Optional[datetime] = None
     resolved_at: Optional[datetime] = None
 
+    notification_status: NotificationStatus
+    last_notified_at: Optional[datetime] = None
+    suppressed_until: Optional[datetime] = None
+
 
 class AlertListResponse(BaseModel):
     items: List[AlertResponse]
@@ -84,3 +92,15 @@ class AlertStatisticsResponse(BaseModel):
     medium: int
     high: int
     critical: int
+
+
+class AlertSuppressRequest(BaseModel):
+    suppressed_until: datetime
+
+
+class AlertNotificationResponse(BaseModel):
+    alert_id: str
+    notification_status: NotificationStatus
+    last_notified_at: Optional[datetime] = None
+    suppressed_until: Optional[datetime] = None
+    updated_at: datetime

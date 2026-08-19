@@ -42,10 +42,15 @@ def test_save_multiple_alerts(tmp_path):
 
     service = AlertService(store)
 
+    first = build_alert("alert-001")
+
+    second = build_alert("alert-002")
+    second.source_ip = "203.0.113.25"
+
     saved = service.save_alerts(
         [
-            build_alert("alert-001"),
-            build_alert("alert-002"),
+            first,
+            second,
         ]
     )
 

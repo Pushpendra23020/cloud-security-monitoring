@@ -139,6 +139,28 @@ class PostgresAlertRepository(AlertRepository):
 
         return result is not None
 
+
+    def get_by_fingerprint(
+        self,
+        fingerprint: str,
+    ) -> Optional[Alert]:
+        statement = select(AlertDB).where(
+            AlertDB.fingerprint == fingerprint
+        ).order_by(
+            AlertDB.created_at.desc()
+        )
+
+        db_alert = self.session.execute(
+            statement
+        ).scalars().first()
+
+        if db_alert is None:
+            return None
+
+        return self._to_domain_model(
+            db_alert
+        )
+
     @staticmethod
     def _to_db_model(
         alert: Alert,
@@ -152,6 +174,8 @@ class PostgresAlertRepository(AlertRepository):
             event_id=alert.event_id,
             event_name=alert.event_name,
             detection_key=alert.detection_key,
+            fingerprint=alert.fingerprint,
+            occurrence_count=alert.occurrence_count,
             cloud_provider=alert.cloud_provider,
             account_id=alert.account_id,
             region=alert.region,
@@ -172,6 +196,17 @@ class PostgresAlertRepository(AlertRepository):
                 alert.acknowledged_at
             ),
             resolved_at=alert.resolved_at,
+            first_seen_at=alert.first_seen_at,
+            last_seen_at=alert.last_seen_at,
+            notification_status=(
+                alert.notification_status.value
+            ),
+            last_notified_at=(
+                alert.last_notified_at
+            ),
+            suppressed_until=(
+                alert.suppressed_until
+            ),
             resource_type=alert.resource_type,
             resource_id=alert.resource_id,
         )
@@ -189,6 +224,8 @@ class PostgresAlertRepository(AlertRepository):
             event_id=db_alert.event_id,
             event_name=db_alert.event_name,
             detection_key=db_alert.detection_key,
+            fingerprint=db_alert.fingerprint,
+            occurrence_count=db_alert.occurrence_count,
             cloud_provider=db_alert.cloud_provider,
             account_id=db_alert.account_id,
             region=db_alert.region,
@@ -211,6 +248,17 @@ class PostgresAlertRepository(AlertRepository):
                 db_alert.acknowledged_at
             ),
             resolved_at=db_alert.resolved_at,
+            first_seen_at=db_alert.first_seen_at,
+            last_seen_at=db_alert.last_seen_at,
+            notification_status=(
+                db_alert.notification_status
+            ),
+            last_notified_at=(
+                db_alert.last_notified_at
+            ),
+            suppressed_until=(
+                db_alert.suppressed_until
+            ),
             resource_type=db_alert.resource_type,
             resource_id=db_alert.resource_id,
         )
@@ -229,6 +277,10 @@ class PostgresAlertRepository(AlertRepository):
         db_alert.event_name = alert.event_name
         db_alert.detection_key = (
             alert.detection_key
+        )
+        db_alert.fingerprint = alert.fingerprint
+        db_alert.occurrence_count = (
+            alert.occurrence_count
         )
 
         db_alert.cloud_provider = (
@@ -268,6 +320,23 @@ class PostgresAlertRepository(AlertRepository):
         db_alert.resolved_at = (
             alert.resolved_at
         )
+
+        db_alert.first_seen_at = (
+            alert.first_seen_at
+        )
+        db_alert.last_seen_at = (
+            alert.last_seen_at
+        )
+        db_alert.notification_status = (
+            alert.notification_status.value
+        )
+        db_alert.last_notified_at = (
+            alert.last_notified_at
+        )
+        db_alert.suppressed_until = (
+            alert.suppressed_until
+        )
+
         db_alert.resource_type = alert.resource_type
         db_alert.resource_id = alert.resource_id
 

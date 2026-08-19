@@ -15,11 +15,17 @@ from app.repositories.postgres_alert_repository import (
 )
 from app.schemas.alert import (
     AlertListResponse,
+    AlertNotificationResponse,
     AlertResponse,
     AlertStatusUpdateResponse,
+    AlertSuppressRequest,
 )
 from app.models.alert import AlertSeverity, AlertStatus
 from app.services.alert_service import AlertService
+from app.config import settings
+from app.notifications.factory import (
+    NotificationDispatcherFactory,
+)
 from app.services.status_transition import InvalidStatusTransition
 
 
@@ -40,7 +46,16 @@ def get_alert_service(
         get_alert_repository
     ),
 ) -> AlertService:
-    return AlertService(repository)
+    dispatcher = (
+        NotificationDispatcherFactory.build(
+            settings
+        )
+    )
+
+    return AlertService(
+        repository=repository,
+        dispatcher=dispatcher,
+    )
 
 
 @router.get(
@@ -284,4 +299,124 @@ def mark_false_positive(
         updated_at=alert.updated_at,
         acknowledged_at=alert.acknowledged_at,
         resolved_at=alert.resolved_at,
+    )
+
+
+@router.post(
+    "/{alert_id}/suppress",
+    response_model=AlertNotificationResponse,
+    summary="Suppress alert notifications",
+)
+def suppress_alert_notifications(
+    alert_id: str,
+    request: AlertSuppressRequest,
+    service: AlertService = Depends(
+        get_alert_service
+    ),
+) -> AlertNotificationResponse:
+    try:
+        alert = (
+            service.suppress_alert_notifications(
+                alert_id,
+                request.suppressed_until,
+            )
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found",
+        )
+
+    return AlertNotificationResponse(
+        alert_id=alert.alert_id,
+        notification_status=(
+            alert.notification_status
+        ),
+        last_notified_at=(
+            alert.last_notified_at
+        ),
+        suppressed_until=(
+            alert.suppressed_until
+        ),
+        updated_at=alert.updated_at,
+    )
+
+
+@router.post(
+    "/{alert_id}/unsuppress",
+    response_model=AlertNotificationResponse,
+    summary="Remove alert notification suppression",
+)
+def unsuppress_alert_notifications(
+    alert_id: str,
+    service: AlertService = Depends(
+        get_alert_service
+    ),
+) -> AlertNotificationResponse:
+    alert = (
+        service.unsuppress_alert_notifications(
+            alert_id
+        )
+    )
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found",
+        )
+
+    return AlertNotificationResponse(
+        alert_id=alert.alert_id,
+        notification_status=(
+            alert.notification_status
+        ),
+        last_notified_at=(
+            alert.last_notified_at
+        ),
+        suppressed_until=(
+            alert.suppressed_until
+        ),
+        updated_at=alert.updated_at,
+    )
+
+
+@router.post(
+    "/{alert_id}/notify",
+    response_model=AlertNotificationResponse,
+    summary="Retry alert notification",
+)
+def retry_alert_notification(
+    alert_id: str,
+    service: AlertService = Depends(
+        get_alert_service
+    ),
+) -> AlertNotificationResponse:
+    alert = service.retry_notification(
+        alert_id
+    )
+
+    if alert is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found",
+        )
+
+    return AlertNotificationResponse(
+        alert_id=alert.alert_id,
+        notification_status=(
+            alert.notification_status
+        ),
+        last_notified_at=(
+            alert.last_notified_at
+        ),
+        suppressed_until=(
+            alert.suppressed_until
+        ),
+        updated_at=alert.updated_at,
     )

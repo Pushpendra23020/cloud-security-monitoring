@@ -94,6 +94,17 @@ class JsonAlertStore(AlertRepository):
 
         return False
 
+
+    def get_by_fingerprint(
+        self,
+        fingerprint: str,
+    ) -> Optional[Alert]:
+        for alert in self.load_all():
+            if alert.fingerprint == fingerprint:
+                return alert
+
+        return None
+
     def load_all(
         self,
     ) -> List[Alert]:

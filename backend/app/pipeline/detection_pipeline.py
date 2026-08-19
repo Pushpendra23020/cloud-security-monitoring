@@ -11,6 +11,10 @@ from app.rules.correlation_engine import (
 )
 from app.rules.engine import DetectionEngine
 from app.services.alert_service import AlertService
+from app.config import settings
+from app.notifications.factory import (
+    NotificationDispatcherFactory,
+)
 from app.services.incident_factory import (
     IncidentFactory,
 )
@@ -41,10 +45,22 @@ class DetectionPipeline:
             )
         )
 
-        self.alert_service = (
-            alert_service
-            or AlertService()
-        )
+        if alert_service is not None:
+            self.alert_service = (
+                alert_service
+            )
+        else:
+            dispatcher = (
+                NotificationDispatcherFactory.build(
+                    settings
+                )
+            )
+
+            self.alert_service = (
+                AlertService(
+                    dispatcher=dispatcher,
+                )
+            )
 
         self.incident_service = (
             incident_service
