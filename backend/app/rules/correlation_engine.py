@@ -216,69 +216,75 @@ class CorrelationEngine:
             ).encode("utf-8")
         ).hexdigest()
 
+    
         alert = Alert(
-            rule_id=rule.rule_id,
-            rule_name=rule.name,
-            description=rule.description,
-            severity=rule.severity,
+    rule_id=rule.rule_id,
+    rule_name=rule.name,
+    description=rule.description,
+    severity=rule.severity,
 
-            event_id=event.event_id,
-            event_name=event.event_name,
+    event_id=event.event_id,
+    event_name=event.event_name,
 
-            detection_key=detection_key,
+    detection_key=detection_key,
 
-            cloud_provider=(
-                event.cloud_provider
-            ),
-            account_id=event.account_id,
-            region=event.region,
-            service=event.service,
-            source_ip=event.source_ip,
-            user_identity=(
-                event.user_identity
-            ),
+    cloud_provider=(
+        event.cloud_provider
+    ),
+    account_id=event.account_id,
+    region=event.region,
+    service=event.service,
+    source_ip=event.source_ip,
+    user_identity=(
+        event.user_identity
+    ),
 
-            mitre_tactic=(
-                rule.mitre_tactic
-            ),
-            mitre_technique=(
-                rule.mitre_technique
-            ),
-            mitre_technique_id=(
-                rule.mitre_technique_id
-            ),
+    resource_type=(
+        event.resource_type
+    ),
+    resource_id=(
+        event.resource_id
+    ),
 
-            metadata={
-                "threshold": (
-                    rule.threshold
-                ),
-                "window_minutes": (
-                    rule.window_minutes
-                ),
-                "cooldown_minutes": (
-                    int(
-                        self.cooldown.total_seconds()
-                        / 60
-                    )
-                ),
-                "group_by": (
-                    rule.group_by
-                ),
-                "group_value": (
-                    group_value
-                ),
-                "matched_event_ids": [
-                    item.event_id
-                    for item
-                    in matching_events
-                ],
-                "matched_event_count": (
-                    len(
-                        matching_events
-                    )
-                ),
-            },
-        )
+    mitre_tactic=(
+        rule.mitre_tactic
+    ),
+    mitre_technique=(
+        rule.mitre_technique
+    ),
+    mitre_technique_id=(
+        rule.mitre_technique_id
+    ),
+
+    metadata={
+        "threshold": rule.threshold,
+        "window_minutes": (
+            rule.window_minutes
+        ),
+        "cooldown_minutes": (
+            int(
+                self.cooldown.total_seconds()
+                / 60
+            )
+        ),
+        "group_by": rule.group_by,
+        "group_value": str(
+            group_value
+        ),
+        "matched_event_ids": [
+            matched_event.event_id
+            for matched_event
+            in matching_events
+        ],
+        "matched_event_count": len(
+            matching_events
+        ),
+    },
+)    
+                     
+                
+            
+        
 
         self._record_alert(
             rule.rule_id,

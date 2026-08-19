@@ -172,6 +172,8 @@ class PostgresAlertRepository(AlertRepository):
                 alert.acknowledged_at
             ),
             resolved_at=alert.resolved_at,
+            resource_type=alert.resource_type,
+            resource_id=alert.resource_id,
         )
 
     @staticmethod
@@ -209,6 +211,8 @@ class PostgresAlertRepository(AlertRepository):
                 db_alert.acknowledged_at
             ),
             resolved_at=db_alert.resolved_at,
+            resource_type=db_alert.resource_type,
+            resource_id=db_alert.resource_id,
         )
 
     @staticmethod
@@ -264,6 +268,8 @@ class PostgresAlertRepository(AlertRepository):
         db_alert.resolved_at = (
             alert.resolved_at
         )
+        db_alert.resource_type = alert.resource_type
+        db_alert.resource_id = alert.resource_id
 
     def list_alerts(
         self,

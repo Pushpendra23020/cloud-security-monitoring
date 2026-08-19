@@ -82,14 +82,17 @@ class DetectionEngine:
             service=event.service,
             source_ip=event.source_ip,
             user_identity=event.user_identity,
-
+            
+            resource_type=event.resource_type,
+            resource_id=event.resource_id,
+            
             mitre_tactic=rule.mitre_tactic,
             mitre_technique=rule.mitre_technique,
             mitre_technique_id=rule.mitre_technique_id,
-
+            
             metadata={
                 "rule_metadata": rule.metadata,
-            },
+},
         )
     def evaluate(
         self,

@@ -14,7 +14,9 @@ from app.storage.json_alert_store import (
 from app.services.status_transition import (
     validate_transition,
 )
-
+from app.database.session import SessionLocal
+from app.repositories.asset_repository import AssetRepository
+from app.services.asset_risk_service import AssetRiskService
 
 class AlertService:
     ALERT_TRANSITIONS = {
@@ -131,8 +133,11 @@ class AlertService:
 
         self.repository.update(alert)
 
-        return alert
+        self._recalculate_linked_asset_risk(
+            alert
+        )
 
+        return alert
     def investigate_alert(
         self,
         alert_id: str,
@@ -155,8 +160,12 @@ class AlertService:
 
         self.repository.update(alert)
 
-        return alert
+        self._recalculate_linked_asset_risk(
+            alert
+        )
 
+        return alert
+    
     def resolve_alert(
         self,
         alert_id: str,
@@ -179,6 +188,10 @@ class AlertService:
         alert.updated_at = now
 
         self.repository.update(alert)
+
+        self._recalculate_linked_asset_risk(
+            alert
+        )
 
         return alert
 
@@ -208,3 +221,35 @@ class AlertService:
         self.repository.update(alert)
 
         return alert
+
+    def _recalculate_linked_asset_risk(
+        self,
+        alert: Alert,
+    ) -> None:
+        if not alert.resource_id:
+            return
+
+        db = SessionLocal()
+
+        try:
+            asset = (
+                AssetRepository.get_by_asset_id(
+                    db=db,
+                    asset_id=alert.resource_id,
+                )
+            )
+
+            if asset is None:
+                return
+
+            AssetRiskService.enrich_asset(
+                db=db,
+                asset=asset,
+            )
+
+        except Exception:
+            db.rollback()
+            raise
+
+        finally:
+            db.close()

@@ -101,7 +101,17 @@ class Alert(Base):
         nullable=True,
         index=True,
     )
+    resource_type: Mapped[str | None] = mapped_column(
+    String(100),
+    nullable=True,
+    index=True,
+   )
 
+    resource_id: Mapped[str | None] = mapped_column(
+    String(255),
+    nullable=True,
+    index=True,
+   )
     incident_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,

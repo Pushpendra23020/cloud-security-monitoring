@@ -61,7 +61,8 @@ class Alert(BaseModel):
     service: Optional[str] = None
     source_ip: Optional[str] = None
     user_identity: Optional[str] = None
-
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
     # Correlation / incident information
     incident_id: Optional[str] = None
 

@@ -1,5 +1,6 @@
 from typing import Annotated
-
+from app.repositories.asset_repository import AssetRepository
+from app.services.asset_risk_service import AssetRiskService
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -35,14 +36,46 @@ def create_asset(
         asset_data=asset_data,
     )
 
-
 @router.get(
-    "",
-    response_model=list[AssetResponse],
+    "/{asset_id}/risk-explanation",
+    summary="Explain asset risk score",
 )
+def explain_asset_risk(
+    asset_id: str,
+    db: DatabaseSession,
+):
+    asset = AssetRepository.get_by_asset_id(
+        db=db,
+        asset_id=asset_id,
+    )
+
+    if asset is None:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=404,
+            detail="Asset not found",
+        )
+
+    return AssetRiskService.explain_asset_risk(
+        db=db,
+        asset=asset,
+    )
 def list_assets(
     db: DatabaseSession,
 ) -> list[AssetResponse]:
 
     return AssetService.list_assets(db=db)
 
+@router.post(
+    "/enrich",
+    response_model=list[AssetResponse],
+    summary="Recalculate asset security risk",
+)
+def enrich_assets(
+    db: DatabaseSession,
+) -> list[AssetResponse]:
+
+    return AssetService.enrich_all_assets(
+        db=db
+    )

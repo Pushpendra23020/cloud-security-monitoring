@@ -5,6 +5,7 @@ from app.api.v1.aws import router as aws_router
 from app.api.v1.cloud_accounts import router as cloud_accounts_router
 from app.api.v1.health import router as health_router
 from app.api.v1.statistics import router as statistics_router
+from app.api.v1.assets import router as assets_router
 
 
 api_router = APIRouter(
@@ -32,4 +33,7 @@ api_router.include_router(
 )
 api_router.include_router(
     incidents_router
+)
+api_router.include_router(
+    assets_router
 )

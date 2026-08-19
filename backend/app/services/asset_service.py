@@ -1,3 +1,4 @@
+from app.services.asset_risk_service import AssetRiskService
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -5,7 +6,9 @@ from sqlalchemy.orm import Session
 from app.database.models.asset import Asset
 from app.repositories.asset_repository import AssetRepository
 from app.schemas.asset import AssetCreate
-
+from app.services.asset_risk_service import (
+    AssetRiskService,
+)
 
 class AssetService:
 
@@ -46,3 +49,23 @@ class AssetService:
     ) -> list[Asset]:
 
         return AssetRepository.get_all(db=db)
+    
+    @staticmethod
+    def enrich_all_assets(
+        db: Session,
+    ) -> list[Asset]:
+
+        assets = AssetRepository.get_all(
+            db=db
+        )
+
+        enriched_assets = []
+
+        for asset in assets:
+            enriched_assets.append(
+                AssetRiskService.enrich_asset(
+                    db=db,
+                    asset=asset,
+                )
+            )
+        return enriched_assets 
