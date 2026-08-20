@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter  # type: ignore[reportMissingImports]
 from app.api.v1.incidents import router as incidents_router
 from app.api.v1.alerts import router as alerts_router
 from app.api.v1.aws import router as aws_router
@@ -6,7 +6,9 @@ from app.api.v1.cloud_accounts import router as cloud_accounts_router
 from app.api.v1.health import router as health_router
 from app.api.v1.statistics import router as statistics_router
 from app.api.v1.assets import router as assets_router
-
+from app.api.v1.dashboard import (
+    router as dashboard_router,
+)
 
 api_router = APIRouter(
     prefix="/api/v1"
@@ -36,4 +38,7 @@ api_router.include_router(
 )
 api_router.include_router(
     assets_router
+)
+api_router.include_router(
+    dashboard_router
 )
