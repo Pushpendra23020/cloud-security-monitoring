@@ -1,25 +1,89 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  lazy,
+  Suspense,
+} from "react";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+} from "react-router-dom";
+
 import MainLayout from "./components/layout/MainLayout";
-import Dashboard from "./pages/Dashboard";
-import Incidents from "./pages/Incidents";
-import Alerts from "./pages/Alerts";
-import ThreatHunting from "./pages/ThreatHunting";
-import Assets from "./pages/Assets";
-import Rules from "./pages/Rules";
+
+const Dashboard = lazy(
+  () => import("./pages/Dashboard")
+);
+
+const Incidents = lazy(
+  () => import("./pages/Incidents")
+);
+
+const Alerts = lazy(
+  () => import("./pages/Alerts")
+);
+
+const ThreatHunting = lazy(
+  () => import("./pages/ThreatHunting")
+);
+
+const Assets = lazy(
+  () => import("./pages/Assets")
+);
+
+const Rules = lazy(
+  () => import("./pages/Rules")
+);
+
+
+function RouteLoadingFallback() {
+  return (
+    <div className="panel route-loading">
+      Loading security workspace...
+    </div>
+  );
+}
+
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/incidents" element={<Incidents />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/threat-hunting" element={<ThreatHunting />} />
-          <Route path="/assets" element={<Assets />} />
-          <Route path="/rules" element={<Rules />} />
-        </Route>
-      </Routes>
+      <Suspense
+        fallback={<RouteLoadingFallback />}
+      >
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route
+              path="/"
+              element={<Dashboard />}
+            />
+
+            <Route
+              path="/incidents"
+              element={<Incidents />}
+            />
+
+            <Route
+              path="/alerts"
+              element={<Alerts />}
+            />
+
+            <Route
+              path="/threat-hunting"
+              element={<ThreatHunting />}
+            />
+
+            <Route
+              path="/assets"
+              element={<Assets />}
+            />
+
+            <Route
+              path="/rules"
+              element={<Rules />}
+            />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

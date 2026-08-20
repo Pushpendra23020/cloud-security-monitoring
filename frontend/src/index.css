@@ -1494,3 +1494,17 @@ button {
     flex-direction: column;
   }
 }
+
+/* ==================================================
+   Phase 7.6 - Route loading
+   ================================================== */
+
+.route-loading {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
