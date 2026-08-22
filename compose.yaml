@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: cloud-security-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -22,29 +21,38 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: cloud-security-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG}
       AWS_REGION: ${AWS_REGION}
+
       ALERT_CONSOLE_NOTIFICATIONS: ${ALERT_CONSOLE_NOTIFICATIONS}
       ALERT_WEBHOOK_ENABLED: ${ALERT_WEBHOOK_ENABLED}
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
       ALERT_WEBHOOK_TIMEOUT: ${ALERT_WEBHOOK_TIMEOUT:-5.0}
       ALERT_WEBHOOK_MAX_ATTEMPTS: ${ALERT_WEBHOOK_MAX_ATTEMPTS:-3}
       ALERT_WEBHOOK_BACKOFF_SECONDS: ${ALERT_WEBHOOK_BACKOFF_SECONDS:-1.0}
+
     ports:
       - "8000:8000"
+
     depends_on:
       db:
         condition: service_healthy
+
     command: >
       sh -c "
       alembic upgrade head &&
       uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
+
     healthcheck:
       test:
         [
@@ -55,13 +63,12 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 6
+      start_period: 30s
 
   frontend:
     build:
       context: ./frontend
-    container_name: cloud-security-frontend
     restart: unless-stopped
     ports:
       - "8080:80"

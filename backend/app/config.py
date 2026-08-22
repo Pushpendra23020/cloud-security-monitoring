@@ -6,7 +6,18 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    DATABASE_URL: str
+    # Legacy/direct database URL.
+    # Useful for local development, tests, and CI.
+    DATABASE_URL: str | None = None
+
+    # Structured PostgreSQL configuration.
+    # Used by Docker/Compose and safely supports reserved
+    # characters in passwords.
+    POSTGRES_DB: str | None = None
+    POSTGRES_USER: str | None = None
+    POSTGRES_PASSWORD: str | None = None
+    POSTGRES_HOST: str = "db"
+    POSTGRES_PORT: int = 5432
 
     AWS_REGION: str = "ap-south-1"
     AWS_PROFILE: str | None = None
@@ -32,4 +43,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-
