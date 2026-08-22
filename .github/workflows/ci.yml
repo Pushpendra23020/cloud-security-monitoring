@@ -29,6 +29,20 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Initialize test database
+        env:
+          DATABASE_URL: sqlite:///./ci-test.db
+          SECRET_KEY: ci-test-secret-key
+          DEBUG: "false"
+        run: |
+          python - <<'PY'
+          from app.database.base import Base
+          from app.database.session import engine
+
+          Base.metadata.create_all(bind=engine)
+          print("CI database schema created")
+          PY
+
       - name: Run backend tests
         env:
           DATABASE_URL: sqlite:///./ci-test.db
