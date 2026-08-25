@@ -9,7 +9,10 @@ from app.repositories.asset_repository import (
 from app.services.asset_risk_service import (
     AssetRiskService,
 )
-
+from app.utils.metrics import (
+    ASSET_RISK_REFRESH_BATCHES_TOTAL,
+    ASSET_RISK_REFRESH_TOTAL,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -147,5 +150,19 @@ class AssetRiskRefreshService:
             failed,
             batches,
         )
+        ASSET_RISK_REFRESH_TOTAL.labels(
+            result="scanned",
+        ).inc(scanned)
 
+        ASSET_RISK_REFRESH_TOTAL.labels(
+            result="refreshed",
+        ).inc(refreshed)
+
+        ASSET_RISK_REFRESH_TOTAL.labels(
+            result="failed",
+        ).inc(failed)
+
+        ASSET_RISK_REFRESH_BATCHES_TOTAL.inc(
+            batches
+        )
         return result

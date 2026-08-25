@@ -11,7 +11,9 @@ from app.repositories.incident_repository import (
 from app.services.status_transition import (
     validate_transition,
 )
-
+from app.utils.metrics import (
+    SECURITY_INCIDENTS_CREATED_TOTAL,
+)
 
 class IncidentService:
     INCIDENT_TRANSITIONS = {
@@ -44,9 +46,14 @@ class IncidentService:
         self,
         incident: Incident,
     ) -> bool:
-        return self.repository.save(
+        saved = self.repository.save(
             incident
         )
+
+        if saved:
+            SECURITY_INCIDENTS_CREATED_TOTAL.inc()
+
+        return saved
 
     def get_incident(
         self,

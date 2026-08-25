@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: "Cloud Security Monitoring"
+    orgId: 1
+    folder: "Cloud Security Monitoring"
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+
+    options:
+      path: /var/lib/grafana/dashboards

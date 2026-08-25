@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
+    # Runtime / observability configuration
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
+
     # Legacy/direct database URL.
     # Useful for local development, tests, and CI.
     DATABASE_URL: str | None = None
@@ -34,7 +38,7 @@ class Settings(BaseSettings):
     ALERT_WEBHOOK_TIMEOUT: float = 5.0
     ALERT_WEBHOOK_MAX_ATTEMPTS: int = 3
     ALERT_WEBHOOK_BACKOFF_SECONDS: float = 1.0
-
+    EVENT_INGEST_API_KEY: str | None = None
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,

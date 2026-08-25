@@ -13,7 +13,7 @@ from app.storage.checkpoint_store import (
 from app.storage.json_event_store import (
     JsonEventStore,
 )
-
+from app.utils.metrics import CLOUDTRAIL_EVENTS_TOTAL
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,15 @@ class CloudTrailIngestionService:
         result = self.pipeline.process_batch(
             raw_events
         )
+        for metric_result, count in (
+            ("processed", result["processed"]),
+            ("saved", result["saved"]),
+            ("duplicate", result["duplicates"]),
+            ("failed", result["failed"]),
+        ):
+            CLOUDTRAIL_EVENTS_TOTAL.labels(
+                result=metric_result,
+            ).inc(count)
 
         if result["failed"] == 0:
             self.checkpoint_store.save_checkpoint(

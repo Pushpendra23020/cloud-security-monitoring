@@ -1,10 +1,27 @@
 from fastapi import FastAPI, HTTPException, status
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.router import api_router
 from app.config import settings
 from app.database.session import engine
+from app.middleware.logging import RequestLoggingMiddleware
+from app.utils.logger import configure_logging, get_logger
+from app.utils.metrics import initialize_app_metrics
+from app.utils.metrics import initialize_app_metrics
+
+
+
+configure_logging()
+
+logger = get_logger(__name__)
+
+initialize_app_metrics(
+    version=settings.APP_VERSION,
+    environment=settings.ENVIRONMENT,
+)
 
 
 app = FastAPI(
@@ -13,7 +30,13 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
+app.add_middleware(RequestLoggingMiddleware)
+
 app.include_router(api_router)
+
+logger.info(
+    "Cloud Security Monitoring API initialized"
+)
 
 
 @app.get("/", tags=["Root"])
@@ -23,6 +46,17 @@ def root() -> dict[str, str]:
         "version": settings.APP_VERSION,
         "status": "running",
     }
+
+
+@app.get(
+    "/metrics",
+    include_in_schema=False,
+)
+def metrics() -> Response:
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.get("/health", tags=["Health"])

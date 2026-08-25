@@ -1,5 +1,5 @@
 from typing import List
-
+from app.utils.metrics import SECURITY_DETECTIONS_TOTAL
 from app.models.alert import Alert
 from app.models.security_event import SecurityEvent
 from app.rules.aws_correlation_rules import (
@@ -89,6 +89,18 @@ class DetectionPipeline:
         alerts.extend(
             correlation_alerts
         )
+        for alert in alerts:
+            detection_type = (
+                "correlation"
+                if alert in correlation_alerts
+                else "single_event"
+            )
+
+            SECURITY_DETECTIONS_TOTAL.labels(
+                severity=alert.severity.value,
+                cloud_provider=alert.cloud_provider,
+                detection_type=detection_type,
+            ).inc()
 
         # Persist alerts individually so we know
         # which alerts were newly stored.

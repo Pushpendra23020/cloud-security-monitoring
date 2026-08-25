@@ -9,6 +9,7 @@ from app.api.v1.assets import router as assets_router
 from app.api.v1.dashboard import (
     router as dashboard_router,
 )
+from app.api.v1.events import router as events_router
 
 api_router = APIRouter(
     prefix="/api/v1"
@@ -41,4 +42,7 @@ api_router.include_router(
 )
 api_router.include_router(
     dashboard_router
+)
+api_router.include_router(
+    events_router
 )

@@ -20,7 +20,11 @@ from app.database.session import SessionLocal
 from app.repositories.asset_repository import AssetRepository
 from app.services.asset_risk_service import AssetRiskService
 from app.notifications.dispatcher import (
-    NotificationDispatcher,
+    NotificationDispatcher,)
+from app.utils.metrics import (
+    SECURITY_ALERTS_DEDUPLICATED_TOTAL,
+    SECURITY_ALERTS_SAVED_TOTAL,
+
 )
 
 class AlertService:
@@ -203,6 +207,7 @@ class AlertService:
         if self.repository.exists(
             alert.alert_id
         ):
+            SECURITY_ALERTS_DEDUPLICATED_TOTAL.inc()
             return False
 
         self._apply_asset_risk_severity(
@@ -219,7 +224,7 @@ class AlertService:
                 alert.fingerprint
             )
         )
-
+        SECURITY_ALERTS_DEDUPLICATED_TOTAL.inc()
         if (
             existing is not None
             and existing.status not in {
@@ -282,7 +287,11 @@ class AlertService:
         saved = self.repository.save(
             alert
         )
-
+        if saved:
+           SECURITY_ALERTS_SAVED_TOTAL.labels(
+               severity=alert.severity.value,
+               cloud_provider=alert.cloud_provider,
+           ).inc()
         if saved:
             self._dispatch_notification(
                 alert
