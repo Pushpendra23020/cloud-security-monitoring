@@ -84,6 +84,8 @@ npm --prefix frontend run build
 
 ## Deploy to Render
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2FPushpendra23020%2Fcloud-security-monitoring%2Ftree%2Fmain)
+
 The repository includes a `render.yaml` Blueprint that deploys the frontend and
 API as one Docker web service backed by managed PostgreSQL. In Render, choose
 **New → Blueprint**, connect this repository, and deploy the `main` branch.
