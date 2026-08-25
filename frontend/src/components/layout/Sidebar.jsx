@@ -9,7 +9,9 @@ import {
   Activity,
   Settings,
   Cloud,
+  Users,
 } from "lucide-react";
+import { useAuth } from "../../context/authState";
 
 const menuItems = [
   { name: "Dashboard", path: "/", icon: LayoutDashboard },
@@ -21,6 +23,7 @@ const menuItems = [
 ];
 
 function Sidebar() {
+  const { user } = useAuth();
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -57,15 +60,19 @@ function Sidebar() {
       </nav>
 
       <div className="sidebar-bottom">
-        <div className="nav-item">
+        {user?.role === "admin" && <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+          <Users size={19} />
+          <span>Access Management</span>
+        </NavLink>}
+        <NavLink to="/health" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
           <Activity size={19} />
           <span>System Health</span>
-        </div>
+        </NavLink>
 
-        <div className="nav-item">
+        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
           <Settings size={19} />
           <span>Settings</span>
-        </div>
+        </NavLink>
 
         <div className="sensor-status">
           <span className="status-dot"></span>

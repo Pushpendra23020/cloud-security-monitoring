@@ -12,6 +12,5 @@ htmlcov/
 !.env.example
 .git/
 .gitignore
-tests/
 *.log
 .DS_Store

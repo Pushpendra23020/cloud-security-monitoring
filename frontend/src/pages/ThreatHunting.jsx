@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   Crosshair,
@@ -37,9 +38,10 @@ function formatDate(value) {
 }
 
 function ThreatHunting() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [alerts, setAlerts] = useState([]);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => searchParams.get("q") || "");
   const [severity, setSeverity] = useState("");
   const [service, setService] = useState("");
   const [region, setRegion] = useState("");
@@ -83,6 +85,13 @@ function ThreatHunting() {
       window.clearTimeout(timeoutId);
     };
   }, [loadData]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setQuery(searchParams.get("q") || "");
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchParams]);
 
   const services = useMemo(() => {
     return [
@@ -216,6 +225,7 @@ function ThreatHunting() {
 
   function clearFilters() {
     setQuery("");
+    setSearchParams({}, { replace: true });
     setSeverity("");
     setService("");
     setRegion("");

@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: cloud-security-monitoring
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerContext: .
+    dockerfilePath: ./deployment/render/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cloud-security-monitoring-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: EVENT_INGEST_API_KEY
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEBUG
+        value: "false"
+      - key: AUTH_ENABLED
+        value: "true"
+      - key: AUTH_BOOTSTRAP_ADMIN_USERNAME
+        value: cloud-admin
+      - key: AUTH_BOOTSTRAP_ADMIN_EMAIL
+        value: cloud-admin@example.com
+      - key: AUTH_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: ALERT_CONSOLE_NOTIFICATIONS
+        value: "true"
+      - key: ALERT_WEBHOOK_ENABLED
+        value: "false"
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+
+databases:
+  - name: cloud-security-monitoring-db
+    plan: free
+    region: singapore
+    databaseName: cloud_security
+    user: cloud_security
+    ipAllowList: []

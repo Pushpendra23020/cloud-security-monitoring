@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Phase 10 identity and access management. Authentication remains
+    # opt-in for local/test compatibility and is enabled in production via
+    # AUTH_ENABLED=true.
+    AUTH_ENABLED: bool = False
+    AUTH_BOOTSTRAP_ADMIN_USERNAME: str | None = None
+    AUTH_BOOTSTRAP_ADMIN_EMAIL: str | None = None
+    AUTH_BOOTSTRAP_ADMIN_PASSWORD: str | None = None
+
     # Alert notification configuration
     ALERT_CONSOLE_NOTIFICATIONS: bool = True
 
