@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -20,6 +20,15 @@ class CloudAccount(Base):
         nullable=False,
         index=True,
     )
+    name: Mapped[str] = mapped_column(String(120), nullable=False, default="AWS Account")
+    auth_method: Mapped[str] = mapped_column(String(30), nullable=False, default="assume_role")
+    role_arn: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    external_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    monitoring_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    services: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    health_status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending")
+    last_sync: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     account_id: Mapped[str] = mapped_column(
         String(100),

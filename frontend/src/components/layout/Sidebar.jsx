@@ -64,6 +64,9 @@ function Sidebar() {
           <Users size={19} />
           <span>Access Management</span>
         </NavLink>}
+        {user?.role === "admin" && <NavLink to="/admin/aws-accounts" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+          <Cloud size={19} /><span>AWS Accounts</span>
+        </NavLink>}
         <NavLink to="/health" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
           <Activity size={19} />
           <span>System Health</span>

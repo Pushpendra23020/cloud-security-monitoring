@@ -7,6 +7,8 @@ from botocore.exceptions import (
     PartialCredentialsError,
 )
 
+import boto3
+
 from app.collectors.aws.session import get_aws_session
 
 
@@ -59,3 +61,22 @@ def get_caller_identity() -> AWSIdentity:
             "An AWS SDK connection error occurred."
         ) from exc
 
+
+def assume_role_identity(role_arn: str, region: str, external_id: str | None = None) -> AWSIdentity:
+    """Validate cross-account access using short-lived STS credentials."""
+    try:
+        arguments = {"RoleArn": role_arn, "RoleSessionName": "cloud-security-monitor"}
+        if external_id:
+            arguments["ExternalId"] = external_id
+        response = get_aws_session().client("sts", region_name=region).assume_role(**arguments)
+        credentials = response["Credentials"]
+        session = boto3.Session(
+            aws_access_key_id=credentials["AccessKeyId"],
+            aws_secret_access_key=credentials["SecretAccessKey"],
+            aws_session_token=credentials["SessionToken"],
+            region_name=region,
+        )
+        identity = session.client("sts").get_caller_identity()
+        return {"user_id": identity["UserId"], "account_id": identity["Account"], "arn": identity["Arn"]}
+    except (NoCredentialsError, PartialCredentialsError, ClientError, BotoCoreError) as exc:
+        raise AWSConnectionError("Unable to assume the configured monitoring role.") from exc

@@ -24,7 +24,7 @@ An open-source cloud security monitoring platform designed to monitor cloud work
 
 ## Project Status
 
-Phase 10 - Identity, Access Control, and Audit Logging
+Production-style SaaS platform with secure multi-account AWS onboarding
 
 ### Delivery history
 
@@ -41,6 +41,24 @@ Phase 10 - Identity, Access Control, and Audit Logging
 | 8 | Production containers and CI | Complete |
 | 9 | Metrics, logging, dashboards, and runtime hardening | Complete |
 | 10 | Authentication, RBAC, user administration, and audit logs | Complete |
+| 11 | Admin AWS account control panel | Complete |
+| 12 | Background collection and scheduling | Complete |
+| 13 | Structured logging and audit trail | Complete |
+| 14 | PostgreSQL-backed automated verification | Complete |
+| 15 | Production container and Render deployment | Complete |
+| 16 | Architecture, threat model, IAM, and deployment documentation | Complete |
+
+## Architecture and security
+
+- [Architecture and API design](docs/ARCHITECTURE.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Deployment and hardening guide](docs/DEPLOYMENT.md)
+- [Least-privilege AWS monitoring role](infrastructure/aws/monitoring-role.yaml)
+
+AWS account onboarding uses cross-account `sts:AssumeRole`. Administrators can
+manage accounts at `/admin/aws-accounts`; the backend independently enforces the
+admin role for creation, updates, deletion, validation, and direct collection.
+The UI and API never return an external ID or AWS secret credential.
 
 ## Phase 10 access control
 
@@ -89,6 +107,6 @@ npm --prefix frontend run build
 The repository includes a `render.yaml` Blueprint that deploys the frontend and
 API as one Docker web service backed by managed PostgreSQL. In Render, choose
 **New → Blueprint**, connect this repository, and deploy the `main` branch.
-Render prompts for `AUTH_BOOTSTRAP_ADMIN_PASSWORD` and optional AWS credentials.
-Use an IAM principal restricted to the read-only actions required by the AWS
-collectors; do not upload a personal SSO cache or root-account credentials.
+Render prompts for `AUTH_BOOTSTRAP_ADMIN_PASSWORD`. Give the deployed service
+an execution identity that can assume customer monitoring roles; do not upload
+personal, root-account, or long-lived customer access keys.

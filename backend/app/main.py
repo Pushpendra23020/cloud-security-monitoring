@@ -15,7 +15,7 @@ from app.api.router import api_router
 from app.config import settings
 from app.database.session import SessionLocal, engine
 from app.database.models.user import User
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.repositories.user_repository import UserRepository
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.auth import AuditMiddleware, AuthenticationMiddleware
@@ -59,9 +59,32 @@ def bootstrap_phase_10_admin() -> None:
             "Authentication enabled without complete bootstrap admin settings"
         )
         return
+    if len(password) < 12:
+        logger.warning(
+            "Bootstrap administrator password ignored because it is shorter than 12 characters"
+        )
+        return
     with SessionLocal() as db:
         repository = UserRepository(db)
-        if repository.get_by_username(username):
+        user = repository.get_by_username(username)
+        if user:
+            changed = False
+            if not verify_password(password, user.password_hash):
+                user.password_hash = hash_password(password)
+                changed = True
+            if user.email != email:
+                user.email = email
+                changed = True
+            if user.role != "admin" or not user.is_active:
+                user.role = "admin"
+                user.is_active = True
+                changed = True
+            if changed:
+                db.commit()
+                logger.info(
+                    "Phase 10 bootstrap administrator synchronized",
+                    extra={"username": username},
+                )
             return
         repository.add(
             User(

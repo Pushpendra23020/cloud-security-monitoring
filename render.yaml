@@ -33,10 +33,6 @@ services:
         sync: false
       - key: AWS_REGION
         value: ap-south-1
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
       - key: ALERT_CONSOLE_NOTIFICATIONS
         value: "true"
       - key: ALERT_WEBHOOK_ENABLED

@@ -41,6 +41,12 @@ const SystemHealth = lazy(() => import("./pages/SystemHealth"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Login = lazy(() => import("./pages/Login"));
 const Users = lazy(() => import("./pages/Users"));
+const AwsAccounts = lazy(() => import("./pages/AwsAccounts"));
+
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  return user?.role === "admin" ? children : <Navigate to="/" replace />;
+}
 
 function ProtectedLayout() {
   const { enabled, loading, user } = useAuth();
@@ -101,6 +107,8 @@ function App() {
             <Route path="/health" element={<SystemHealth />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/admin" element={<Navigate to="/admin/aws-accounts" replace />} />
+            <Route path="/admin/aws-accounts" element={<AdminRoute><AwsAccounts /></AdminRoute>} />
           </Route>
         </Routes>
       </Suspense>

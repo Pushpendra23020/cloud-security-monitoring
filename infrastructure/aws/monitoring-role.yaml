@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Read-only cross-account role for Cloud Security Monitoring
+Parameters:
+  PlatformAccountId:
+    Type: String
+    AllowedPattern: '^[0-9]{12}$'
+  ExternalId:
+    Type: String
+    MinLength: 8
+    NoEcho: true
+Resources:
+  MonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: CloudSecurityMonitoringReadOnly
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${PlatformAccountId}:root
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      Policies:
+        - PolicyName: SecurityTelemetryReadOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudtrail:DescribeTrails
+                  - cloudtrail:GetEventSelectors
+                  - cloudtrail:GetTrailStatus
+                  - cloudtrail:LookupEvents
+                  - guardduty:ListDetectors
+                  - guardduty:ListFindings
+                  - guardduty:GetFindings
+                  - config:DescribeConfigurationRecorders
+                  - config:DescribeComplianceByConfigRule
+                  - config:GetComplianceDetailsByConfigRule
+                  - iam:GetAccountSummary
+                  - iam:ListUsers
+                  - iam:ListRoles
+                  - iam:ListPolicies
+                  - iam:ListMFADevices
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeVpcs
+                  - s3:ListAllMyBuckets
+                  - s3:GetBucketAcl
+                  - s3:GetBucketPolicyStatus
+                  - s3:GetEncryptionConfiguration
+                  - lambda:ListFunctions
+                Resource: '*'
+Outputs:
+  RoleArn:
+    Value: !GetAtt MonitoringRole.Arn

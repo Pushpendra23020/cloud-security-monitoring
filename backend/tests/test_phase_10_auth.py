@@ -121,3 +121,36 @@ def test_non_admin_cannot_manage_users(monkeypatch):
         assert response.status_code == 403
     finally:
         cleanup(user.id)
+
+
+def test_non_admin_cannot_create_cloud_accounts(monkeypatch):
+    monkeypatch.setattr(settings, "AUTH_ENABLED", True)
+    user, password = create_user("analyst")
+    try:
+        token = login(user, password)
+        response = client.post(
+            "/api/v1/cloud-accounts",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "provider": "aws",
+                "account_id": "123456789012",
+                "region": "ap-south-1",
+            },
+        )
+        assert response.status_code == 403
+    finally:
+        cleanup(user.id)
+
+
+def test_non_admin_cannot_invoke_aws_management(monkeypatch):
+    monkeypatch.setattr(settings, "AUTH_ENABLED", True)
+    user, password = create_user("analyst")
+    try:
+        token = login(user, password)
+        response = client.get(
+            "/api/v1/aws/identity",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 403
+    finally:
+        cleanup(user.id)

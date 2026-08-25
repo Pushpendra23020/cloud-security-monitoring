@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.database.models.user import User
+from app.dependencies import require_roles
 from app.schemas.aws import AWSIdentityResponse
 from app.schemas.aws_collection import (
     EC2CollectionRequest,
@@ -22,13 +24,14 @@ DatabaseSession = Annotated[
     Session,
     Depends(get_db),
 ]
+AdminUser = Annotated[User, Depends(require_roles("admin"))]
 
 
 @router.get(
     "/identity",
     response_model=AWSIdentityResponse,
 )
-def verify_aws_identity():
+def verify_aws_identity(_: AdminUser):
     return AWSService.verify_connection()
 
 
@@ -39,6 +42,7 @@ def verify_aws_identity():
 def collect_ec2(
     request: EC2CollectionRequest,
     db: DatabaseSession,
+    _: AdminUser,
 ):
 
     try:
