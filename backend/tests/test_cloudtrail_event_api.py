@@ -98,6 +98,31 @@ def test_cloudtrail_event_duplicate():
     assert second.json()["duplicates"] == 1
 
 
+def test_event_queue_status_is_available():
+    response = client.get("/api/v1/events/queue")
+
+    assert response.status_code == 200
+    assert set(response.json()) == {
+        "queued",
+        "processing",
+        "retry",
+        "completed",
+        "dead_letter",
+        "oldest_pending_age_seconds",
+        "healthy",
+    }
+
+    dead_letters = client.get("/api/v1/events/queue/dead-letters")
+    assert dead_letters.status_code == 200
+    assert set(dead_letters.json()) == {
+        "items",
+        "total",
+        "page",
+        "page_size",
+        "pages",
+    }
+
+
 def test_cloudtrail_event_requires_event_object():
     response = client.post(
         "/api/v1/events/cloudtrail",

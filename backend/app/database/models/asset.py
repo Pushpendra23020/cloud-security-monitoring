@@ -5,9 +5,11 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     JSON,
     String,
+    UniqueConstraint,
 )
 
 from app.database.base import Base
@@ -16,10 +18,26 @@ from app.database.base import Base
 class Asset(Base):
 
     __tablename__ = "assets"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "asset_id", name="uq_assets_org_asset"),
+        UniqueConstraint("organization_id", "id", name="uq_assets_org_id"),
+        ForeignKeyConstraint(
+            ["organization_id", "cloud_account_id"],
+            ["cloud_accounts.organization_id", "cloud_accounts.id"],
+            name="fk_assets_org_cloud_account",
+        ),
+    )
 
     id = Column(
         Integer,
         primary_key=True,
+    )
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id"),
+        nullable=False,
+        default=1,
+        index=True,
     )
 
     cloud_account_id = Column(
@@ -35,7 +53,6 @@ class Asset(Base):
 
     asset_id = Column(
         String,
-        unique=True,
         nullable=False,
     )
 

@@ -10,6 +10,7 @@ import {
   Settings,
   Cloud,
   Users,
+  Database,
 } from "lucide-react";
 import { useAuth } from "../../context/authState";
 
@@ -20,6 +21,7 @@ const menuItems = [
   { name: "Threat Hunting", path: "/threat-hunting", icon: Crosshair },
   { name: "Cloud Assets", path: "/assets", icon: Server },
   { name: "Detection Rules", path: "/rules", icon: ListChecks },
+  { name: "Event Queue", path: "/event-queue", icon: Database },
 ];
 
 function Sidebar() {

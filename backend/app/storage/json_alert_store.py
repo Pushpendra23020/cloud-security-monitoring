@@ -4,13 +4,22 @@ from typing import List, Optional
 
 from app.models.alert import Alert
 from app.repositories.alert_repository import AlertRepository
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 
 
 class JsonAlertStore(AlertRepository):
     def __init__(
         self,
-        file_path: str = "data/alerts/security_alerts.jsonl",
+        file_path: str | None = None,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ):
+        if file_path is None:
+            file_path = (
+                "data/alerts/security_alerts.jsonl"
+                if organization_id == DEFAULT_ORGANIZATION_ID
+                else f"data/alerts/organizations/{organization_id}/security_alerts.jsonl"
+            )
+        self.organization_id = organization_id
         self.file_path = Path(file_path)
 
         self.file_path.parent.mkdir(

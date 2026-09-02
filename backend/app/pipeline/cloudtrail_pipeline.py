@@ -2,13 +2,15 @@ from app.repositories.asset_repository import AssetRepository
 import logging
 from typing import Any, Dict, Iterable
 from app.services.asset_risk_service import AssetRiskService
-from app.database.session import SessionLocal
+from app.database.session import SessionLocal, set_tenant_context
 from app.normalizers.aws.cloudtrail import normalize_cloudtrail_event
 from app.pipeline.detection_pipeline import DetectionPipeline
 from app.pipeline.event_classifier import classify_event
 from app.pipeline.event_validator import validate_event
 from app.services.asset_discovery_service import AssetDiscoveryService
 from app.storage.json_event_store import JsonEventStore
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
+from app.models.security_event import SecurityEvent
 
 
 logger = logging.getLogger(__name__)
@@ -19,12 +21,20 @@ class CloudTrailIngestionPipeline:
         self,
         store: JsonEventStore | None = None,
         detection_pipeline: DetectionPipeline | None = None,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
+        persist_events: bool = True,
     ):
-        self.store = store or JsonEventStore()
+        self.organization_id = organization_id
+        self.store = (
+            store
+            or (JsonEventStore(organization_id=organization_id) if persist_events else None)
+        )
 
         self.detection_pipeline = (
             detection_pipeline
-            or DetectionPipeline()
+            or DetectionPipeline(
+                organization_id=organization_id,
+            )
         )
 
     def _discover_asset(
@@ -47,6 +57,7 @@ class CloudTrailIngestionPipeline:
             return
 
         db = SessionLocal()
+        set_tenant_context(db, self.organization_id)
 
         try:
             asset = (
@@ -54,6 +65,7 @@ class CloudTrailIngestionPipeline:
                 .discover_from_event(
                     db=db,
                     event=event,
+                    organization_id=self.organization_id,
                 )
             )
 
@@ -105,6 +117,7 @@ class CloudTrailIngestionPipeline:
             return
 
         db = SessionLocal()
+        set_tenant_context(db, self.organization_id)
 
         try:
             from app.repositories.asset_repository import (
@@ -115,6 +128,7 @@ class CloudTrailIngestionPipeline:
                 AssetRepository.get_by_asset_id(
                     db=db,
                     asset_id=event.resource_id,
+                    organization_id=self.organization_id,
                 )
             )
 
@@ -179,10 +193,19 @@ class CloudTrailIngestionPipeline:
         #
         event = classify_event(event)
 
-        #
-        # 4. Persist normalized event.
-        #
-        saved = self.store.save(event)
+        return self.process_normalized(event)
+
+    def process_normalized(
+        self,
+        event: SecurityEvent,
+        *,
+        persist: bool = True,
+    ) -> bool:
+        """Run enrichment and detection for a normalized durable event."""
+
+        if persist and self.store is None:
+            raise RuntimeError("An event store is required when persistence is enabled.")
+        saved = self.store.save(event) if persist else True
 
         if saved:
             #

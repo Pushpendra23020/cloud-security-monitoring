@@ -1,29 +1,25 @@
+import argparse
 import json
 from pathlib import Path
 
-from app.database.session import SessionLocal
+from app.database.session import SessionLocal, set_tenant_context
 from app.models.security_event import SecurityEvent
 from app.pipeline.detection_pipeline import DetectionPipeline
 from app.repositories.postgres_alert_repository import (
     PostgresAlertRepository,
 )
 from app.services.alert_service import AlertService
-from backend.app.repositories.postgres_incident_repository import PostgresIncidentRepository
-from backend.app.services.incident_service import IncidentService
+from app.repositories.postgres_incident_repository import PostgresIncidentRepository
+from app.services.incident_service import IncidentService
 
 
-EVENT_FILE = Path(
-    "data/normalized/security_events.jsonl"
-)
-
-
-def load_events():
-    if not EVENT_FILE.exists():
+def load_events(event_file: Path):
+    if not event_file.exists():
         raise FileNotFoundError(
-            f"Security event file not found: {EVENT_FILE}"
+            f"Security event file not found: {event_file}"
         )
 
-    with EVENT_FILE.open(
+    with event_file.open(
         "r",
         encoding="utf-8",
     ) as file:
@@ -51,6 +47,18 @@ def load_events():
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Run detections for one organization.")
+    parser.add_argument("--organization-id", type=int, required=True)
+    args = parser.parse_args()
+    event_file = Path(
+        "data/normalized/security_events.jsonl"
+        if args.organization_id == 1
+        else (
+            f"data/normalized/organizations/{args.organization_id}/"
+            "security_events.jsonl"
+        )
+    )
+
     processed = 0
     alerts_generated = 0
     alerts_persisted = 0
@@ -60,9 +68,10 @@ def main():
     )
 
     with SessionLocal() as session:
+        set_tenant_context(session, args.organization_id)
         # Initialize repositories and services
-        alert_repository = PostgresAlertRepository(session)
-        incident_repository = PostgresIncidentRepository(session)
+        alert_repository = PostgresAlertRepository(session, args.organization_id)
+        incident_repository = PostgresIncidentRepository(session, args.organization_id)
 
         alert_service = AlertService(alert_repository)
         incident_service = IncidentService(incident_repository)
@@ -70,9 +79,10 @@ def main():
         pipeline = DetectionPipeline(
             alert_service=alert_service,
             incident_service=incident_service,
+            organization_id=args.organization_id,
         )
 
-        for event in load_events():
+        for event in load_events(event_file):
             processed += 1
 
             alerts = pipeline.process(
@@ -86,7 +96,7 @@ def main():
 
             for alert in alerts:
                 persisted = (
-                    repository.exists(
+                    alert_repository.exists(
                         alert.alert_id
                     )
                 )

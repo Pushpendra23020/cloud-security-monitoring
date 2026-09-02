@@ -21,6 +21,8 @@ from app.services.incident_factory import (
 from app.services.incident_service import (
     IncidentService,
 )
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
+from app.storage.json_alert_store import JsonAlertStore
 
 
 class DetectionPipeline:
@@ -30,6 +32,7 @@ class DetectionPipeline:
         correlation_engine: CorrelationEngine | None = None,
         alert_service: AlertService | None = None,
         incident_service: IncidentService | None = None,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ):
         self.engine = (
             engine
@@ -52,12 +55,16 @@ class DetectionPipeline:
         else:
             dispatcher = (
                 NotificationDispatcherFactory.build(
-                    settings
+                    settings,
+                    organization_id=organization_id,
                 )
             )
 
             self.alert_service = (
                 AlertService(
+                    repository=JsonAlertStore(
+                        organization_id=organization_id,
+                    ),
                     dispatcher=dispatcher,
                 )
             )

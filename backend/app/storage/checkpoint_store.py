@@ -18,6 +18,7 @@ class CheckpointStore:
     @classmethod
     def for_cloudtrail(
         cls,
+        organization_id: int,
         account_id: str,
         region: str,
         base_dir: str = "data/checkpoints",
@@ -25,6 +26,8 @@ class CheckpointStore:
         file_path = (
             Path(base_dir)
             / "aws"
+            / "organizations"
+            / str(organization_id)
             / account_id
             / f"{region}.json"
         )

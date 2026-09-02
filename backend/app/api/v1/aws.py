@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.database.models.user import User
-from app.dependencies import require_roles
+from app.dependencies import CurrentOrganizationId, require_roles
 from app.schemas.aws import AWSIdentityResponse
 from app.schemas.aws_collection import (
     EC2CollectionRequest,
@@ -13,6 +13,7 @@ from app.schemas.aws_collection import (
 )
 from app.services.aws_ingestion_service import AWSIngestionService
 from app.services.aws_service import AWSService
+from app.config import settings
 
 
 router = APIRouter(
@@ -32,6 +33,8 @@ AdminUser = Annotated[User, Depends(require_roles("admin"))]
     response_model=AWSIdentityResponse,
 )
 def verify_aws_identity(_: AdminUser):
+    if not settings.PLATFORM_DIAGNOSTICS_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found.")
     return AWSService.verify_connection()
 
 
@@ -43,12 +46,14 @@ def collect_ec2(
     request: EC2CollectionRequest,
     db: DatabaseSession,
     _: AdminUser,
+    organization_id: CurrentOrganizationId,
 ):
 
     try:
         return AWSIngestionService.ingest_ec2_instances(
             db=db,
             cloud_account_id=request.cloud_account_id,
+            organization_id=organization_id,
         )
 
     except RuntimeError as exc:

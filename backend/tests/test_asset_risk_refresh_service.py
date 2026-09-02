@@ -34,6 +34,7 @@ def test_refresh_stale_assets():
             AssetRiskRefreshService
             .refresh_stale(
                 db=db,
+                organization_id=7,
                 batch_size=100,
                 stale_minutes=60,
             )
@@ -87,6 +88,7 @@ def test_refresh_continues_after_asset_failure():
             AssetRiskRefreshService
             .refresh_stale(
                 db=db,
+                organization_id=7,
                 batch_size=100,
                 stale_minutes=60,
             )
@@ -132,6 +134,7 @@ def test_refresh_stale_uses_keyset_cursor():
             AssetRiskRefreshService
             .refresh_stale(
                 db=db,
+                organization_id=7,
                 batch_size=1,
                 stale_minutes=60,
             )
@@ -149,6 +152,7 @@ def test_refresh_stale_uses_keyset_cursor():
         .kwargs["after_id"]
         == 0
     )
+    assert get_batch.call_args_list[0].kwargs["organization_id"] == 7
 
     assert (
         get_batch.call_args_list[1]
@@ -169,6 +173,7 @@ def test_invalid_batch_size_rejected():
     try:
         AssetRiskRefreshService.refresh_stale(
             db=db,
+            organization_id=7,
             batch_size=0,
             stale_minutes=60,
         )

@@ -15,6 +15,7 @@ def test_checkpoints_are_isolated_by_region(
 
     us_store = (
         CheckpointStore.for_cloudtrail(
+            organization_id=1,
             account_id=account_id,
             region="us-east-1",
             base_dir=str(tmp_path),
@@ -23,6 +24,7 @@ def test_checkpoints_are_isolated_by_region(
 
     ap_store = (
         CheckpointStore.for_cloudtrail(
+            organization_id=1,
             account_id=account_id,
             region="ap-south-1",
             base_dir=str(tmp_path),
@@ -76,6 +78,7 @@ def test_checkpoints_are_isolated_by_account(
 ):
     first_store = (
         CheckpointStore.for_cloudtrail(
+            organization_id=1,
             account_id="111111111111",
             region="us-east-1",
             base_dir=str(tmp_path),
@@ -84,6 +87,7 @@ def test_checkpoints_are_isolated_by_account(
 
     second_store = (
         CheckpointStore.for_cloudtrail(
+            organization_id=1,
             account_id="222222222222",
             region="us-east-1",
             base_dir=str(tmp_path),
@@ -94,3 +98,20 @@ def test_checkpoints_are_isolated_by_account(
         first_store.file_path
         != second_store.file_path
     )
+
+
+def test_checkpoints_are_isolated_by_organization(tmp_path):
+    first_store = CheckpointStore.for_cloudtrail(
+        organization_id=101,
+        account_id="123456789012",
+        region="us-east-1",
+        base_dir=str(tmp_path),
+    )
+    second_store = CheckpointStore.for_cloudtrail(
+        organization_id=202,
+        account_id="123456789012",
+        region="us-east-1",
+        base_dir=str(tmp_path),
+    )
+
+    assert first_store.file_path != second_store.file_path

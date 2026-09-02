@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 from app.database.models.incident import (
     Incident as IncidentDB,
 )
@@ -19,8 +20,10 @@ class PostgresIncidentRepository(
     def __init__(
         self,
         session: Session,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ):
         self.session = session
+        self.organization_id = organization_id
 
     def save(
         self,
@@ -54,8 +57,10 @@ class PostgresIncidentRepository(
         statement = select(
             IncidentDB
         ).where(
+            IncidentDB.organization_id
+            == self.organization_id,
             IncidentDB.incident_id
-            == incident_id
+            == incident_id,
         )
 
         db_incident = self.session.execute(
@@ -76,8 +81,10 @@ class PostgresIncidentRepository(
         statement = select(
             IncidentDB
         ).where(
+            IncidentDB.organization_id
+            == self.organization_id,
             IncidentDB.incident_id
-            == incident.incident_id
+            == incident.incident_id,
         )
 
         db_incident = self.session.execute(
@@ -105,6 +112,10 @@ class PostgresIncidentRepository(
     ) -> List[Incident]:
         statement = (
             select(IncidentDB)
+            .where(
+                IncidentDB.organization_id
+                == self.organization_id
+            )
             .order_by(
                 IncidentDB.created_at.desc()
             )
@@ -133,8 +144,10 @@ class PostgresIncidentRepository(
         statement = select(
             IncidentDB.id
         ).where(
+            IncidentDB.organization_id
+            == self.organization_id,
             IncidentDB.incident_id
-            == incident_id
+            == incident_id,
         )
 
         result = self.session.execute(
@@ -143,11 +156,12 @@ class PostgresIncidentRepository(
 
         return result is not None
 
-    @staticmethod
     def _to_db_model(
+        self,
         incident: Incident,
     ) -> IncidentDB:
         return IncidentDB(
+            organization_id=self.organization_id,
             incident_id=incident.incident_id,
             title=incident.title,
             description=incident.description,

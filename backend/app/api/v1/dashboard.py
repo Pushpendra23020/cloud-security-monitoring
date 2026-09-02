@@ -5,6 +5,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.dependencies import CurrentOrganizationId
 from app.services.dashboard_service import (
     DashboardService,
 )
@@ -23,10 +24,12 @@ router = APIRouter(
 
 
 def get_dashboard_service(
+    organization_id: CurrentOrganizationId,
     db: Session = Depends(get_db),
 ) -> DashboardService:
     return DashboardService(
-        db=db
+        db=db,
+        organization_id=organization_id,
     )
 
 

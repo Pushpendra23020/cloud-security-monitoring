@@ -15,6 +15,7 @@ class NotificationDispatcherFactory:
     @staticmethod
     def build(
         settings: Settings,
+        organization_id: int | None = None,
     ) -> NotificationDispatcher:
         notifiers = []
 
@@ -31,21 +32,27 @@ class NotificationDispatcherFactory:
                     "ALERT_WEBHOOK_URL is required "
                     "when ALERT_WEBHOOK_ENABLED=true"
                 )
-
-            notifiers.append(
-                WebhookNotifier(
-                    settings.ALERT_WEBHOOK_URL,
-                    timeout=(
-                        settings.ALERT_WEBHOOK_TIMEOUT
-                    ),
-                    max_attempts=(
-                        settings.ALERT_WEBHOOK_MAX_ATTEMPTS
-                    ),
-                    backoff_seconds=(
-                        settings.ALERT_WEBHOOK_BACKOFF_SECONDS
-                    ),
+            if settings.ALERT_WEBHOOK_ORGANIZATION_ID is None:
+                raise ValueError(
+                    "ALERT_WEBHOOK_ORGANIZATION_ID is required "
+                    "when ALERT_WEBHOOK_ENABLED=true"
                 )
-            )
+
+            if organization_id == settings.ALERT_WEBHOOK_ORGANIZATION_ID:
+                notifiers.append(
+                    WebhookNotifier(
+                        settings.ALERT_WEBHOOK_URL,
+                        timeout=(
+                            settings.ALERT_WEBHOOK_TIMEOUT
+                        ),
+                        max_attempts=(
+                            settings.ALERT_WEBHOOK_MAX_ATTEMPTS
+                        ),
+                        backoff_seconds=(
+                            settings.ALERT_WEBHOOK_BACKOFF_SECONDS
+                        ),
+                    )
+                )
 
         return NotificationDispatcher(
             notifiers

@@ -18,7 +18,7 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Run migrations without creating a DB connection."""
 
-    database_url = build_database_url()
+    database_url = build_database_url(for_migrations=True)
 
     context.configure(
         url=str(database_url),
@@ -36,7 +36,7 @@ def run_migrations_online() -> None:
     """Run migrations using a live database connection."""
 
     connectable = create_engine(
-        build_database_url(),
+        build_database_url(for_migrations=True),
         poolclass=pool.NullPool,
     )
 

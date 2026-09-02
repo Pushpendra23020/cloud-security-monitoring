@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -13,6 +13,9 @@ class AuditLog(Base):
         Integer,
         primary_key=True,
         index=True,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, default=1, index=True
     )
 
     action: Mapped[str] = mapped_column(

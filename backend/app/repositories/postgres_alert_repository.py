@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 from app.database.models.alert import Alert as AlertDB
 from app.models.alert import Alert
 from app.repositories.alert_repository import AlertRepository
@@ -13,8 +14,10 @@ class PostgresAlertRepository(AlertRepository):
     def __init__(
         self,
         session: Session,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ):
         self.session = session
+        self.organization_id = organization_id
 
     def save(
         self,
@@ -48,7 +51,8 @@ class PostgresAlertRepository(AlertRepository):
         alert_id: str,
     ) -> Optional[Alert]:
         statement = select(AlertDB).where(
-            AlertDB.alert_id == alert_id
+            AlertDB.alert_id == alert_id,
+            AlertDB.organization_id == self.organization_id,
         )
 
         db_alert = self.session.execute(
@@ -67,7 +71,8 @@ class PostgresAlertRepository(AlertRepository):
         alert: Alert,
     ) -> bool:
         statement = select(AlertDB).where(
-            AlertDB.alert_id == alert.alert_id
+            AlertDB.alert_id == alert.alert_id,
+            AlertDB.organization_id == self.organization_id,
         )
 
         db_alert = self.session.execute(
@@ -93,8 +98,10 @@ class PostgresAlertRepository(AlertRepository):
     def load_all(
         self,
     ) -> List[Alert]:
-        statement = select(AlertDB).order_by(
-            AlertDB.created_at.desc()
+        statement = (
+            select(AlertDB)
+            .where(AlertDB.organization_id == self.organization_id)
+            .order_by(AlertDB.created_at.desc())
         )
 
         db_alerts = self.session.execute(
@@ -113,7 +120,8 @@ class PostgresAlertRepository(AlertRepository):
         statement = select(
             AlertDB.id
         ).where(
-            AlertDB.alert_id == alert_id
+            AlertDB.alert_id == alert_id,
+            AlertDB.organization_id == self.organization_id,
         )
 
         result = self.session.execute(
@@ -130,7 +138,8 @@ class PostgresAlertRepository(AlertRepository):
             AlertDB.id
         ).where(
             AlertDB.detection_key
-            == detection_key
+            == detection_key,
+            AlertDB.organization_id == self.organization_id,
         )
 
         result = self.session.execute(
@@ -145,7 +154,8 @@ class PostgresAlertRepository(AlertRepository):
         fingerprint: str,
     ) -> Optional[Alert]:
         statement = select(AlertDB).where(
-            AlertDB.fingerprint == fingerprint
+            AlertDB.fingerprint == fingerprint,
+            AlertDB.organization_id == self.organization_id,
         ).order_by(
             AlertDB.created_at.desc()
         )
@@ -161,11 +171,12 @@ class PostgresAlertRepository(AlertRepository):
             db_alert
         )
 
-    @staticmethod
     def _to_db_model(
+        self,
         alert: Alert,
     ) -> AlertDB:
         return AlertDB(
+            organization_id=self.organization_id,
             alert_id=alert.alert_id,
             rule_id=alert.rule_id,
             rule_name=alert.rule_name,
@@ -352,7 +363,10 @@ class PostgresAlertRepository(AlertRepository):
         sort_by: str = "created_at",
         sort_order: str = "desc",
     ) -> tuple[List[Alert], int]:
-        filters = []
+        filters = [
+            AlertDB.organization_id
+            == self.organization_id
+        ]
 
         if severity is not None:
             filters.append(
@@ -435,23 +449,33 @@ class PostgresAlertRepository(AlertRepository):
             select(
                 AlertDB.status,
                 func.count(AlertDB.id),
-            ).group_by(
-                AlertDB.status
             )
+            .where(
+                AlertDB.organization_id
+                == self.organization_id
+            )
+            .group_by(AlertDB.status)
         ).all()
 
         severity_rows = self.session.execute(
             select(
                 AlertDB.severity,
                 func.count(AlertDB.id),
-            ).group_by(
-                AlertDB.severity
             )
+            .where(
+                AlertDB.organization_id
+                == self.organization_id
+            )
+            .group_by(AlertDB.severity)
         ).all()
 
         total = self.session.execute(
             select(
                 func.count(AlertDB.id)
+            )
+            .where(
+                AlertDB.organization_id
+                == self.organization_id
             )
         ).scalar_one()
 
@@ -486,7 +510,9 @@ class PostgresAlertRepository(AlertRepository):
             select(AlertDB)
             .where(
                 AlertDB.incident_id
-                == incident_id
+                == incident_id,
+                AlertDB.organization_id
+                == self.organization_id,
             )
             .order_by(
                 AlertDB.created_at.asc()

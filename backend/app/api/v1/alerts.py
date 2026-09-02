@@ -10,6 +10,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.dependencies import CurrentOrganizationId
 from app.repositories.postgres_alert_repository import (
     PostgresAlertRepository,
 )
@@ -36,9 +37,13 @@ router = APIRouter(
 
 
 def get_alert_repository(
+    organization_id: CurrentOrganizationId,
     db: Session = Depends(get_db),
 ) -> PostgresAlertRepository:
-    return PostgresAlertRepository(db)
+    return PostgresAlertRepository(
+        db,
+        organization_id=organization_id,
+    )
 
 
 def get_alert_service(
@@ -48,7 +53,8 @@ def get_alert_service(
 ) -> AlertService:
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=repository.organization_id,
         )
     )
 

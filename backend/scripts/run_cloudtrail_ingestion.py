@@ -2,12 +2,13 @@ import argparse
 import json
 import logging
 
-from app.collectors.aws.client_factory import (
-    create_aws_session,
-)
 from app.collectors.aws.cloudtrail import (
     CloudTrailCollector,
 )
+from app.collectors.aws.sts import assume_role_session, get_session_identity
+from app.database.session import SessionLocal, set_tenant_context
+from app.repositories.cloud_account_repository import CloudAccountRepository
+from app.repositories.event_queue_repository import EventQueueRepository
 from app.services.cloudtrail_ingestion_service import (
     CloudTrailIngestionService,
 )
@@ -35,16 +36,13 @@ def main():
         )
     )
 
-    parser.add_argument(
-        "--profile",
-        type=str,
-        default=None,
-    )
+    parser.add_argument("--organization-id", type=int, required=True)
+    parser.add_argument("--cloud-account-id", type=int, required=True)
 
     parser.add_argument(
         "--region",
         type=str,
-        default="us-east-1",
+        default=None,
     )
 
     parser.add_argument(
@@ -55,20 +53,24 @@ def main():
 
     args = parser.parse_args()
 
-    session = create_aws_session(
-        profile_name=args.profile,
-        region_name=args.region,
+    db = SessionLocal()
+    set_tenant_context(db, args.organization_id)
+    account = CloudAccountRepository.get_by_id(
+        db,
+        args.cloud_account_id,
+        args.organization_id,
     )
+    if account is None:
+        raise SystemExit("Cloud account not found in the requested organization.")
+    if not account.role_arn:
+        raise SystemExit("Cloud account does not have a monitoring role ARN.")
 
-    sts_client = session.client(
-        "sts"
-    )
-
-    identity = (
-        sts_client.get_caller_identity()
-    )
-
-    account_id = identity["Account"]
+    region = args.region or account.region or "us-east-1"
+    session = assume_role_session(account.role_arn, region, account.external_id)
+    identity = get_session_identity(session)
+    account_id = identity["account_id"]
+    if account_id != account.account_id:
+        raise SystemExit("Assumed role belongs to a different AWS account.")
 
     logging.info(
         (
@@ -76,7 +78,7 @@ def main():
             "account_id=%s region=%s"
         ),
         account_id,
-        args.region,
+        region,
     )
 
     cloudtrail_client = session.client(
@@ -90,13 +92,19 @@ def main():
     checkpoint_store = (
         CheckpointStore.for_cloudtrail(
             account_id=account_id,
-            region=args.region,
+            region=region,
+            organization_id=args.organization_id,
         )
     )
 
     service = CloudTrailIngestionService(
         collector=collector,
+        organization_id=args.organization_id,
         checkpoint_store=checkpoint_store,
+        queue_repository=EventQueueRepository(
+            db,
+            args.organization_id,
+        ),
     )
 
     result = service.collect_and_ingest(
@@ -107,7 +115,8 @@ def main():
 
     output = {
         "account_id": account_id,
-        "region": args.region,
+        "region": region,
+        "organization_id": args.organization_id,
         **result,
     }
 
@@ -117,6 +126,7 @@ def main():
             indent=2,
         )
     )
+    db.close()
 
 
 if __name__ == "__main__":

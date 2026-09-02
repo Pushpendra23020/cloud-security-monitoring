@@ -1,10 +1,11 @@
 from datetime import datetime
 
 from sqlalchemy import or_, select
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 from app.database.models.asset import Asset
+from app.database.models.cloud_account import CloudAccount
 from app.schemas.asset import AssetCreate
 
 
@@ -14,11 +15,13 @@ class AssetRepository:
     def get_by_asset_id(
         db: Session,
         asset_id: str,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> Asset | None:
         statement = select(
             Asset
         ).where(
-            Asset.asset_id == asset_id
+            Asset.asset_id == asset_id,
+            Asset.organization_id == organization_id,
         )
 
         return db.scalar(statement)
@@ -26,9 +29,12 @@ class AssetRepository:
     @staticmethod
     def get_all(
         db: Session,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> list[Asset]:
         statement = select(
             Asset
+        ).where(
+            Asset.organization_id == organization_id,
         ).order_by(
             Asset.created_at.desc()
         )
@@ -41,8 +47,10 @@ class AssetRepository:
     def create(
         db: Session,
         asset_data: AssetCreate,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> Asset:
         asset = Asset(
+            organization_id=organization_id,
             cloud_account_id=(
                 asset_data.cloud_account_id
             ),
@@ -80,13 +88,13 @@ class AssetRepository:
         return asset
 
     @staticmethod
-     
     def create_or_update(
         db: Session,
         *,
         cloud_account_id: int,
         asset_type: str,
         asset_id: str,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
         name: str | None = None,
         region: str | None = None,
         resource_state: str | None = None,
@@ -95,15 +103,26 @@ class AssetRepository:
         last_seen: datetime | None = None,
     ) -> Asset:
 
+        account_exists = db.scalar(
+            select(CloudAccount.id).where(
+                CloudAccount.id == cloud_account_id,
+                CloudAccount.organization_id == organization_id,
+            )
+        )
+        if account_exists is None:
+            raise ValueError("Cloud account does not belong to the organization.")
+
         asset = (
             AssetRepository.get_by_asset_id(
                 db=db,
                 asset_id=asset_id,
+                organization_id=organization_id,
             )
         )
 
         if asset is None:
             asset = Asset(
+                organization_id=organization_id,
                 cloud_account_id=cloud_account_id,
                 asset_type=asset_type,
                 asset_id=asset_id,
@@ -172,6 +191,7 @@ class AssetRepository:
         db.refresh(asset)
 
         return asset
+
     @staticmethod
     def get_risk_refresh_batch(
         db: Session,
@@ -179,10 +199,12 @@ class AssetRepository:
         stale_before: datetime,
         batch_size: int = 100,
         after_id: int = 0,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> list[Asset]:
         statement = (
             select(Asset)
             .where(
+                Asset.organization_id == organization_id,
                 Asset.id > after_id,
                 or_(
                     Asset.risk_updated_at.is_(None),

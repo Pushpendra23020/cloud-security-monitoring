@@ -5,6 +5,7 @@ from app.database.models.alert import Alert
 from app.database.models.asset import Asset
 from app.database.models.finding import Finding
 from app.database.models.incident import Incident
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 
 from app.schemas.dashboard import (
     AlertSummary,
@@ -24,8 +25,10 @@ class DashboardService:
     def __init__(
         self,
         db: Session,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> None:
         self.db = db
+        self.organization_id = organization_id
 
     def get_summary(
         self,
@@ -41,6 +44,7 @@ class DashboardService:
         self,
     ) -> AssetSummary:
         counts = self._group_counts(
+            Asset,
             Asset.risk_level
         )
 
@@ -70,6 +74,7 @@ class DashboardService:
         self,
     ) -> AlertSummary:
         severity_counts = self._group_counts(
+            Alert,
             Alert.severity
         )
 
@@ -80,8 +85,8 @@ class DashboardService:
                 func.count(Alert.id)
             )
             .filter(
-                func.lower(Alert.status)
-                == "open"
+                Alert.organization_id == self.organization_id,
+                func.lower(Alert.status) == "open",
             )
             .scalar()
             or 0
@@ -112,6 +117,7 @@ class DashboardService:
         self,
     ) -> IncidentSummary:
         severity_counts = self._group_counts(
+            Incident,
             Incident.severity
         )
 
@@ -122,8 +128,8 @@ class DashboardService:
                 func.count(Incident.id)
             )
             .filter(
-                func.lower(Incident.status)
-                == "open"
+                Incident.organization_id == self.organization_id,
+                func.lower(Incident.status) == "open",
             )
             .scalar()
             or 0
@@ -154,6 +160,7 @@ class DashboardService:
         self,
     ) -> FindingSummary:
         severity_counts = self._group_counts(
+            Finding,
             Finding.severity
         )
 
@@ -164,8 +171,8 @@ class DashboardService:
                 func.count(Finding.id)
             )
             .filter(
-                func.lower(Finding.status)
-                == "open"
+                Finding.organization_id == self.organization_id,
+                func.lower(Finding.status) == "open",
             )
             .scalar()
             or 0
@@ -199,12 +206,15 @@ class DashboardService:
         return (
             self.db.query(
                 func.count(model.id)
-            ).scalar()
+            )
+            .filter(model.organization_id == self.organization_id)
+            .scalar()
             or 0
         )
 
     def _group_counts(
         self,
+        model,
         column,
     ) -> dict[str, int]:
         rows = (
@@ -212,6 +222,7 @@ class DashboardService:
                 func.lower(column),
                 func.count(),
             )
+            .filter(model.organization_id == self.organization_id)
             .group_by(
                 func.lower(column)
             )
@@ -227,6 +238,7 @@ class DashboardService:
         self,
     ) -> SeverityDistributionResponse:
         counts = self._group_counts(
+            Alert,
             Alert.severity
         )
 
@@ -241,6 +253,7 @@ class DashboardService:
         self,
     ) -> RiskSummaryResponse:
         risk_counts = self._group_counts(
+            Asset,
             Asset.risk_level
         )
 
@@ -249,7 +262,9 @@ class DashboardService:
         average_risk_score = (
             self.db.query(
                 func.avg(Asset.risk_score)
-            ).scalar()
+            )
+            .filter(Asset.organization_id == self.organization_id)
+            .scalar()
             or 0.0
         )
 
@@ -258,6 +273,7 @@ class DashboardService:
                 func.count(Asset.id)
             )
             .filter(
+                Asset.organization_id == self.organization_id,
                 Asset.public_exposure.is_(True)
             )
             .scalar()
@@ -297,6 +313,7 @@ class DashboardService:
 
         alerts = (
             self.db.query(Alert)
+            .filter(Alert.organization_id == self.organization_id)
             .order_by(
                 Alert.created_at.desc()
             )
@@ -330,6 +347,7 @@ class DashboardService:
 
         incidents = (
             self.db.query(Incident)
+            .filter(Incident.organization_id == self.organization_id)
             .order_by(
                 Incident.created_at.desc()
             )

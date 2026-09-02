@@ -23,6 +23,7 @@ def build_settings(
         "ALERT_CONSOLE_NOTIFICATIONS": False,
         "ALERT_WEBHOOK_ENABLED": False,
         "ALERT_WEBHOOK_URL": None,
+        "ALERT_WEBHOOK_ORGANIZATION_ID": 1,
         "ALERT_WEBHOOK_TIMEOUT": 5.0,
     }
 
@@ -36,7 +37,8 @@ def test_no_channels_enabled():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -50,7 +52,8 @@ def test_console_channel_enabled():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -74,7 +77,8 @@ def test_webhook_channel_enabled():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -106,7 +110,8 @@ def test_console_and_webhook_enabled():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -136,7 +141,8 @@ def test_webhook_requires_url():
         match="ALERT_WEBHOOK_URL",
     ):
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
 
 
@@ -151,7 +157,8 @@ def test_webhook_timeout_configured():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -175,7 +182,8 @@ def test_webhook_retry_settings_configured():
 
     dispatcher = (
         NotificationDispatcherFactory.build(
-            settings
+            settings,
+            organization_id=1,
         )
     )
 
@@ -183,3 +191,29 @@ def test_webhook_retry_settings_configured():
 
     assert notifier.max_attempts == 5
     assert notifier.backoff_seconds == 2.5
+
+
+def test_webhook_is_only_enabled_for_its_bound_organization():
+    settings = build_settings(
+        ALERT_WEBHOOK_ENABLED=True,
+        ALERT_WEBHOOK_URL="https://example.com/webhook",
+        ALERT_WEBHOOK_ORGANIZATION_ID=11,
+    )
+
+    matching = NotificationDispatcherFactory.build(settings, organization_id=11)
+    other = NotificationDispatcherFactory.build(settings, organization_id=22)
+
+    assert len(matching.notifiers) == 1
+    assert isinstance(matching.notifiers[0], WebhookNotifier)
+    assert other.notifiers == []
+
+
+def test_webhook_requires_an_organization_binding():
+    settings = build_settings(
+        ALERT_WEBHOOK_ENABLED=True,
+        ALERT_WEBHOOK_URL="https://example.com/webhook",
+        ALERT_WEBHOOK_ORGANIZATION_ID=None,
+    )
+
+    with pytest.raises(ValueError, match="ALERT_WEBHOOK_ORGANIZATION_ID"):
+        NotificationDispatcherFactory.build(settings, organization_id=1)

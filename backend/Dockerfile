@@ -36,7 +36,8 @@ COPY app ./app
 COPY alembic.ini ./
 COPY migrations ./migrations
 
-RUN chown -R appuser:appgroup /app
+RUN mkdir -p /var/lib/cloud-security/archive \
+    && chown -R appuser:appgroup /app /var/lib/cloud-security/archive
 
 USER appuser
 

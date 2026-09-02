@@ -198,8 +198,8 @@ class AssetRiskService:
         alert_statement = (
             select(AlertDB)
             .where(
-                AlertDB.resource_id
-                == asset.asset_id
+                AlertDB.organization_id == asset.organization_id,
+                AlertDB.resource_id == asset.asset_id,
             )
         )
 
@@ -212,8 +212,8 @@ class AssetRiskService:
         finding_statement = (
             select(FindingDB)
             .where(
-                FindingDB.asset_id
-                == asset.id
+                FindingDB.organization_id == asset.organization_id,
+                FindingDB.asset_id == asset.id,
             )
         )
 
@@ -311,8 +311,8 @@ class AssetRiskService:
         alert_statement = (
             select(AlertDB)
             .where(
-                AlertDB.resource_id
-                == asset.asset_id
+                AlertDB.organization_id == asset.organization_id,
+                AlertDB.resource_id == asset.asset_id,
             )
         )
 
@@ -325,8 +325,8 @@ class AssetRiskService:
         finding_statement = (
             select(FindingDB)
             .where(
-                FindingDB.asset_id
-                == asset.id
+                FindingDB.organization_id == asset.organization_id,
+                FindingDB.asset_id == asset.id,
             )
         )
 

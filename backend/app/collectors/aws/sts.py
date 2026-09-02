@@ -8,6 +8,7 @@ from botocore.exceptions import (
 )
 
 import boto3
+from boto3.session import Session
 
 from app.collectors.aws.session import get_aws_session
 
@@ -62,21 +63,69 @@ def get_caller_identity() -> AWSIdentity:
         ) from exc
 
 
-def assume_role_identity(role_arn: str, region: str, external_id: str | None = None) -> AWSIdentity:
-    """Validate cross-account access using short-lived STS credentials."""
+def get_session_identity(session: Session) -> AWSIdentity:
+    """Resolve the identity attached to a specific AWS session."""
     try:
-        arguments = {"RoleArn": role_arn, "RoleSessionName": "cloud-security-monitor"}
+        identity = session.client("sts").get_caller_identity()
+        return {
+            "user_id": identity["UserId"],
+            "account_id": identity["Account"],
+            "arn": identity["Arn"],
+        }
+    except (
+        NoCredentialsError,
+        PartialCredentialsError,
+        ClientError,
+        BotoCoreError,
+    ) as exc:
+        raise AWSConnectionError(
+            "Unable to validate the AWS session identity."
+        ) from exc
+
+
+def assume_role_session(
+    role_arn: str,
+    region: str,
+    external_id: str | None = None,
+) -> Session:
+    """Return a short-lived session for the configured monitoring role."""
+    try:
+        arguments = {
+            "RoleArn": role_arn,
+            "RoleSessionName": "cloud-security-monitor",
+        }
         if external_id:
             arguments["ExternalId"] = external_id
-        response = get_aws_session().client("sts", region_name=region).assume_role(**arguments)
+
+        response = (
+            get_aws_session()
+            .client("sts", region_name=region)
+            .assume_role(**arguments)
+        )
         credentials = response["Credentials"]
-        session = boto3.Session(
+
+        return boto3.Session(
             aws_access_key_id=credentials["AccessKeyId"],
             aws_secret_access_key=credentials["SecretAccessKey"],
             aws_session_token=credentials["SessionToken"],
             region_name=region,
         )
-        identity = session.client("sts").get_caller_identity()
-        return {"user_id": identity["UserId"], "account_id": identity["Account"], "arn": identity["Arn"]}
     except (NoCredentialsError, PartialCredentialsError, ClientError, BotoCoreError) as exc:
-        raise AWSConnectionError("Unable to assume the configured monitoring role.") from exc
+        raise AWSConnectionError(
+            "Unable to assume the configured monitoring role."
+        ) from exc
+
+
+def assume_role_identity(
+    role_arn: str,
+    region: str,
+    external_id: str | None = None,
+) -> AWSIdentity:
+    """Validate cross-account access using short-lived STS credentials."""
+    try:
+        session = assume_role_session(role_arn, region, external_id)
+        return get_session_identity(session)
+    except AWSConnectionError as exc:
+        raise AWSConnectionError(
+            "Unable to assume the configured monitoring role."
+        ) from exc

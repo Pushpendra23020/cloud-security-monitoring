@@ -23,10 +23,23 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
     last_login_at: datetime | None
+    mfa_enabled: bool
+    oidc_linked: bool
 
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
+
+class OidcIdentityUpdate(BaseModel):
+    issuer: str = Field(min_length=8, max_length=500, pattern=r"^https://")
+    subject: str = Field(min_length=1, max_length=255)
+
+
+class OidcIdentityResponse(BaseModel):
+    user_id: int
+    issuer: str
+    subject: str
 
 
 class AuditLogResponse(BaseModel):

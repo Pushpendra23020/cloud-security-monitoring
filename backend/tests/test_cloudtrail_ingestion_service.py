@@ -51,6 +51,7 @@ def test_collector_to_pipeline_integration(tmp_path):
 
     service = CloudTrailIngestionService(
         collector=collector,
+        organization_id=1,
         store=store,
     )
 

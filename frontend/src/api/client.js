@@ -6,21 +6,56 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
+let accessToken = null;
+let refreshPromise = null;
+
+export const setAccessToken = (token) => {
+  accessToken = token || null;
+};
+
+export const refreshAccessToken = async () => {
+  if (!refreshPromise) {
+    refreshPromise = axios.post(
+      "/api/v1/auth/refresh",
+      null,
+      { withCredentials: true }
+    ).then((response) => {
+      setAccessToken(response.data.access_token);
+      return response.data;
+    }).finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("cloud-sentinel-token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
 
 apiClient.interceptors.response.use(
   (response) => response,
 
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("cloud-sentinel-token");
-      window.dispatchEvent(new Event("cloud-sentinel-auth-expired"));
+  async (error) => {
+    const originalRequest = error.config;
+    const path = originalRequest?.url || "";
+    const canRefresh = !path.includes("/auth/login")
+      && !path.includes("/auth/refresh")
+      && !path.includes("/auth/logout");
+    if (error.response?.status === 401 && !originalRequest?._retry && canRefresh) {
+      originalRequest._retry = true;
+      try {
+        const token = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${token.access_token}`;
+        return apiClient(originalRequest);
+      } catch {
+        setAccessToken(null);
+        window.dispatchEvent(new Event("cloud-sentinel-auth-expired"));
+      }
     }
     console.error(
       "[Cloud Sentinel API]",

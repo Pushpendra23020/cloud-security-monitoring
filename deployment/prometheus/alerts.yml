@@ -1,0 +1,20 @@
+groups:
+  - name: cloud-security-event-queue
+    rules:
+      - alert: CloudSecurityEventDeadLetters
+        expr: sum(cloud_security_event_queue_depth{status="dead_letter"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Security events are in the dead-letter queue
+          description: Review and replay failed events from the Event Queue screen.
+
+      - alert: CloudSecurityEventQueueStalled
+        expr: max(cloud_security_event_queue_oldest_pending_seconds) > 300
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: Security event processing is delayed
+          description: The oldest pending security event has exceeded five minutes.

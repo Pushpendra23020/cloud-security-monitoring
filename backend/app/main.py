@@ -13,14 +13,18 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.router import api_router
 from app.config import settings
-from app.database.session import SessionLocal, engine
+from app.database.session import SessionLocal, engine, validate_rls_enforcement
 from app.database.models.user import User
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password
+from app.core.runtime_security import validate_api_runtime_security
 from app.repositories.user_repository import UserRepository
+from app.repositories.organization_repository import OrganizationRepository
 from app.middleware.logging import RequestLoggingMiddleware
 from app.middleware.auth import AuditMiddleware, AuthenticationMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.utils.logger import configure_logging, get_logger
 from app.utils.metrics import initialize_app_metrics
+from app.services.event_queue_metrics_service import refresh_event_queue_metrics
 
 
 
@@ -68,25 +72,23 @@ def bootstrap_phase_10_admin() -> None:
         repository = UserRepository(db)
         user = repository.get_by_username(username)
         if user:
-            changed = False
-            if not verify_password(password, user.password_hash):
-                user.password_hash = hash_password(password)
-                changed = True
-            if user.email != email:
-                user.email = email
-                changed = True
-            if user.role != "admin" or not user.is_active:
-                user.role = "admin"
-                user.is_active = True
-                changed = True
-            if changed:
-                db.commit()
-                logger.info(
-                    "Phase 10 bootstrap administrator synchronized",
-                    extra={"username": username},
+            organization_repository = OrganizationRepository(db)
+            membership = organization_repository.get_membership(
+                user.id,
+                1,
+                active_only=False,
+            )
+            if membership is None:
+                organization_repository.ensure_default_membership(
+                    user,
+                    role="admin",
                 )
+            logger.info(
+                "Bootstrap administrator already exists; credentials were not changed",
+                extra={"username": username},
+            )
             return
-        repository.add(
+        user = repository.add(
             User(
                 username=username,
                 email=email,
@@ -94,11 +96,23 @@ def bootstrap_phase_10_admin() -> None:
                 role="admin",
             )
         )
+        OrganizationRepository(db).ensure_default_membership(
+            user,
+            role="admin",
+            reactivate=True,
+        )
         logger.info("Phase 10 bootstrap administrator created", extra={"username": username})
+
+
+def validate_runtime_security() -> None:
+    """Backward-compatible import point used by existing callers and tests."""
+    validate_api_runtime_security()
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    validate_runtime_security()
+    validate_rls_enforcement()
     bootstrap_phase_10_admin()
     yield
 
@@ -113,6 +127,7 @@ app = FastAPI(
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(AuthenticationMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(api_router)
 
@@ -135,6 +150,12 @@ def root() -> dict[str, str]:
     include_in_schema=False,
 )
 def metrics() -> Response:
+    if not settings.METRICS_ENABLED:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    try:
+        refresh_event_queue_metrics()
+    except SQLAlchemyError:
+        logger.exception("event_queue_metrics_refresh_failed")
     return Response(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,

@@ -3,10 +3,21 @@ from pathlib import Path
 from typing import List
 
 from app.models.security_event import SecurityEvent
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 
 
 class JsonEventStore:
-    def __init__(self, file_path: str = "data/normalized/security_events.jsonl"):
+    def __init__(
+        self,
+        file_path: str | None = None,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
+    ):
+        if file_path is None:
+            file_path = (
+                "data/normalized/security_events.jsonl"
+                if organization_id == DEFAULT_ORGANIZATION_ID
+                else f"data/normalized/organizations/{organization_id}/security_events.jsonl"
+            )
         self.file_path = Path(file_path)
         self.file_path.parent.mkdir(parents=True, exist_ok=True)
 

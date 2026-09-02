@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -8,11 +8,18 @@ from app.database.base import Base
 
 class Alert(Base):
     __tablename__ = "alerts"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "alert_id", name="uq_alerts_org_alert"),
+        UniqueConstraint("organization_id", "detection_key", name="uq_alerts_org_detection_key"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         index=True,
+    )
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, default=1, index=True
     )
 
     # alert_id: Mapped[str] = mapped_column(
@@ -23,7 +30,6 @@ class Alert(Base):
     # )
     alert_id: Mapped[str] = mapped_column(
     String(100),
-    unique=True,
     nullable=False,
     index=True,
     )
@@ -63,7 +69,6 @@ class Alert(Base):
 
     detection_key: Mapped[str | None] = mapped_column(
         String(255),
-        unique=True,
         nullable=True,
         index=True,
     )

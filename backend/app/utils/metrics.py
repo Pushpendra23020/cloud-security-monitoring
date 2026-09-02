@@ -86,6 +86,30 @@ CLOUDTRAIL_EVENTS_TOTAL = Counter(
     ],
 )
 
+EVENT_QUEUE_TRANSITIONS_TOTAL = Counter(
+    "cloud_security_event_queue_transitions_total",
+    "Durable event queue state transitions",
+    ["source", "result"],
+)
+
+EVENT_QUEUE_PROCESSING_SECONDS = Histogram(
+    "cloud_security_event_queue_processing_seconds",
+    "Time spent processing a durable security event",
+    ["source", "result"],
+)
+
+EVENT_QUEUE_DEPTH = Gauge(
+    "cloud_security_event_queue_depth",
+    "Current durable event queue depth by organization and state",
+    ["organization_id", "status"],
+)
+
+EVENT_QUEUE_OLDEST_PENDING_SECONDS = Gauge(
+    "cloud_security_event_queue_oldest_pending_seconds",
+    "Age of the oldest pending event by organization",
+    ["organization_id"],
+)
+
 ASSET_RISK_REFRESH_TOTAL = Counter(
     "cloud_security_asset_risk_refresh_total",
     "Asset risk refresh totals",

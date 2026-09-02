@@ -42,6 +42,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Login = lazy(() => import("./pages/Login"));
 const Users = lazy(() => import("./pages/Users"));
 const AwsAccounts = lazy(() => import("./pages/AwsAccounts"));
+const EventQueue = lazy(() => import("./pages/EventQueue"));
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -104,6 +105,7 @@ function App() {
               path="/rules"
               element={<Rules />}
             />
+            <Route path="/event-queue" element={<EventQueue />} />
             <Route path="/health" element={<SystemHealth />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/users" element={<Users />} />

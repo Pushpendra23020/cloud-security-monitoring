@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Integer, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -8,16 +8,21 @@ from app.database.base import Base
 
 class Incident(Base):
     __tablename__ = "incidents"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "incident_id", name="uq_incidents_org_incident"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         index=True,
     )
+    organization_id: Mapped[int] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, default=1, index=True
+    )
 
     incident_id: Mapped[str] = mapped_column(
         String(100),
-        unique=True,
         nullable=False,
         index=True,
     )

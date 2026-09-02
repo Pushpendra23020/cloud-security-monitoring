@@ -16,7 +16,7 @@ from app.storage.json_alert_store import (
 from app.services.status_transition import (
     validate_transition,
 )
-from app.database.session import SessionLocal
+from app.database.session import SessionLocal, set_tenant_context
 from app.repositories.asset_repository import AssetRepository
 from app.services.asset_risk_service import AssetRiskService
 from app.notifications.dispatcher import (
@@ -26,6 +26,7 @@ from app.utils.metrics import (
     SECURITY_ALERTS_SAVED_TOTAL,
 
 )
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 
 class AlertService:
     ALERT_TRANSITIONS = {
@@ -55,6 +56,11 @@ class AlertService:
     ):
         self.repository = (
             repository or JsonAlertStore()
+        )
+        self.organization_id = getattr(
+            self.repository,
+            "organization_id",
+            DEFAULT_ORGANIZATION_ID,
         )
         self.dispatcher = dispatcher
 
@@ -134,12 +140,14 @@ class AlertService:
             return
 
         db = SessionLocal()
+        set_tenant_context(db, self.organization_id)
 
         try:
             asset = (
                 AssetRepository.get_by_asset_id(
                     db=db,
                     asset_id=alert.resource_id,
+                    organization_id=self.organization_id,
                 )
             )
 
@@ -586,6 +594,7 @@ class AlertService:
                 AssetRepository.get_by_asset_id(
                     db=db,
                     asset_id=alert.resource_id,
+                    organization_id=self.organization_id,
                 )
             )
 

@@ -1,8 +1,10 @@
 import logging
 import os
 import time
+from sqlalchemy import select
 
-from app.database.session import SessionLocal
+from app.database.session import SessionLocal, set_tenant_context
+from app.database.models.organization import Organization
 from app.services.asset_risk_refresh_service import (
     AssetRiskRefreshService,
 )
@@ -44,41 +46,43 @@ BATCH_SIZE = int(
 
 
 def run_once() -> None:
-    db = SessionLocal()
-
     try:
-        result = (
-            AssetRiskRefreshService
-            .refresh_stale(
-                db=db,
-                batch_size=BATCH_SIZE,
-                stale_minutes=STALE_MINUTES,
+        with SessionLocal() as discovery_db:
+            organization_ids = list(
+                discovery_db.scalars(
+                    select(Organization.id).where(Organization.is_active.is_(True))
+                )
             )
-        )
+        for organization_id in organization_ids:
+            with SessionLocal() as db:
+                set_tenant_context(db, organization_id)
+                result = AssetRiskRefreshService.refresh_stale(
+                    db=db,
+                    organization_id=organization_id,
+                    batch_size=BATCH_SIZE,
+                    stale_minutes=STALE_MINUTES,
+                )
 
-        logger.info(
-            (
-                "risk_refresh_run "
-                "scanned=%s "
-                "refreshed=%s "
-                "failed=%s "
-                "batches=%s"
-            ),
-            result["scanned"],
-            result["refreshed"],
-            result["failed"],
-            result["batches"],
-        )
+            logger.info(
+                (
+                    "risk_refresh_run "
+                    "organization_id=%s "
+                    "scanned=%s "
+                    "refreshed=%s "
+                    "failed=%s "
+                    "batches=%s"
+                ),
+                organization_id,
+                result["scanned"],
+                result["refreshed"],
+                result["failed"],
+                result["batches"],
+            )
 
     except Exception:
-        db.rollback()
-
         logger.exception(
             "risk_refresh_run_failed"
         )
-
-    finally:
-        db.close()
 
 
 def main() -> None:

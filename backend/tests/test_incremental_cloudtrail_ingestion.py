@@ -72,6 +72,7 @@ def test_existing_checkpoint_is_used(tmp_path):
 
     service = CloudTrailIngestionService(
         collector=collector,
+        organization_id=1,
         store=event_store,
         checkpoint_store=checkpoint_store,
     )

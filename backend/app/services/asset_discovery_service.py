@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import DEFAULT_ORGANIZATION_ID
 from app.database.models.asset import Asset
 from app.database.models.cloud_account import (
     CloudAccount,
@@ -26,14 +27,15 @@ class AssetDiscoveryService:
         *,
         provider: str,
         account_id: str,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> CloudAccount | None:
 
         statement = select(
             CloudAccount
         ).where(
             CloudAccount.provider == provider,
-            CloudAccount.account_id
-            == account_id,
+            CloudAccount.account_id == account_id,
+            CloudAccount.organization_id == organization_id,
         )
 
         return db.scalar(statement)
@@ -64,6 +66,7 @@ class AssetDiscoveryService:
         cls,
         db: Session,
         event: SecurityEvent,
+        organization_id: int = DEFAULT_ORGANIZATION_ID,
     ) -> Asset | None:
 
         if not event.resource_id:
@@ -80,6 +83,7 @@ class AssetDiscoveryService:
                 db=db,
                 provider=event.cloud_provider,
                 account_id=event.account_id,
+                organization_id=organization_id,
             )
         )
 
@@ -98,6 +102,7 @@ class AssetDiscoveryService:
         cloud_account_id=(
             cloud_account.id
         ),
+        organization_id=organization_id,
 
         asset_type=(
             event.resource_type

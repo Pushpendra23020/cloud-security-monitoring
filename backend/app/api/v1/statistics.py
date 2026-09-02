@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.dependencies import CurrentOrganizationId
 from app.repositories.postgres_alert_repository import (
     PostgresAlertRepository,
 )
@@ -16,10 +17,12 @@ router = APIRouter(
 
 
 def get_alert_service(
+    organization_id: CurrentOrganizationId,
     db: Session = Depends(get_db),
 ) -> AlertService:
     repository = PostgresAlertRepository(
-        db
+        db,
+        organization_id=organization_id,
     )
 
     return AlertService(

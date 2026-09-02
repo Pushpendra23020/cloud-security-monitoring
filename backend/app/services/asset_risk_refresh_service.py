@@ -27,6 +27,7 @@ class AssetRiskRefreshService:
         cls,
         db: Session,
         *,
+        organization_id: int,
         batch_size: int = DEFAULT_BATCH_SIZE,
         stale_minutes: int = DEFAULT_STALE_MINUTES,
     ) -> dict[str, int]:
@@ -61,6 +62,7 @@ class AssetRiskRefreshService:
                     stale_before=stale_before,
                     batch_size=batch_size,
                     after_id=after_id,
+                    organization_id=organization_id,
                 )
             )
 

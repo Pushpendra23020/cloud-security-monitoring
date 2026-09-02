@@ -14,6 +14,9 @@ from app.storage.json_event_store import (
     JsonEventStore,
 )
 from app.utils.metrics import CLOUDTRAIL_EVENTS_TOTAL
+from app.pipeline.detection_pipeline import DetectionPipeline
+from app.repositories.event_queue_repository import EventQueueRepository
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +25,24 @@ class CloudTrailIngestionService:
     def __init__(
         self,
         collector,
+        *,
+        organization_id: int,
         store: JsonEventStore | None = None,
         checkpoint_store: CheckpointStore | None = None,
+        detection_pipeline: DetectionPipeline | None = None,
+        queue_repository: EventQueueRepository | None = None,
     ):
         self.collector = collector
-        self.pipeline = CloudTrailIngestionPipeline(store)
+        self.queue_repository = queue_repository
+        self.pipeline = (
+            None
+            if queue_repository is not None
+            else CloudTrailIngestionPipeline(
+                store,
+                detection_pipeline,
+                organization_id=organization_id,
+            )
+        )
 
         self.checkpoint_store = (
             checkpoint_store
@@ -69,9 +85,14 @@ class CloudTrailIngestionService:
             lookup_events
         )
 
-        result = self.pipeline.process_batch(
-            raw_events
-        )
+        if self.queue_repository is not None:
+            result = self.queue_repository.enqueue_batch(
+                raw_events,
+                source="cloudtrail",
+                max_attempts=settings.EVENT_QUEUE_MAX_ATTEMPTS,
+            )
+        else:
+            result = self.pipeline.process_batch(raw_events)
         for metric_result, count in (
             ("processed", result["processed"]),
             ("saved", result["saved"]),
