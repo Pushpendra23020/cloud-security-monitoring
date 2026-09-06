@@ -62,7 +62,7 @@ prompt_toolkit==3.0.52
 protobuf==4.21.12
 psutil==7.1.0
 ptyprocess==0.7.0
-pyasn1==0.6.3
+pyasn1==0.6.4
 pyasn1_modules==0.4.1
 pyasyncore==1.0.2
 pycairo==1.27.0
