@@ -13,6 +13,8 @@ findings, alerts and incidents in a multi-tenant analyst dashboard.
 > organization-specific security configuration and the launch checks documented
 > in [the deployment guide](docs/DEPLOYMENT.md).
 
+![Cloud Sentinel secure sign-in preview](docs/images/login.jpg)
+
 ## Capabilities
 
 - Secure cross-account AWS onboarding with `sts:AssumeRole`; no customer
