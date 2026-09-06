@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 import httpx
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import InvalidTokenError, PyJWKError
 
 from app.config import settings
 
@@ -100,15 +101,23 @@ class OidcService:
         if signing_key is None:
             raise OidcError("The OIDC signing key is unavailable.")
         try:
+            verification_key = jwt.PyJWK.from_dict(
+                signing_key,
+                algorithm=header["alg"],
+            )
             claims = jwt.decode(
                 id_token,
-                signing_key,
+                verification_key,
                 algorithms=[header["alg"]],
                 audience=settings.OIDC_CLIENT_ID,
                 issuer=configuration["issuer"],
-                access_token=tokens.get("access_token"),
             )
-        except (JWTError, KeyError) as exc:
+            self._validate_access_token_hash(
+                claims,
+                header["alg"],
+                tokens.get("access_token"),
+            )
+        except (InvalidTokenError, PyJWKError, KeyError, ValueError) as exc:
             raise OidcError("OIDC ID token validation failed.") from exc
         if not hmac.compare_digest(str(claims.get("nonce", "")), transaction["nonce"]):
             raise OidcError("OIDC nonce validation failed.")
@@ -145,8 +154,29 @@ class OidcService:
             if payload.get("type") != "oidc_transaction":
                 raise OidcError("Invalid OIDC transaction.")
             return payload
-        except JWTError as exc:
+        except InvalidTokenError as exc:
             raise OidcError("Invalid or expired OIDC transaction.") from exc
+
+    @staticmethod
+    def _validate_access_token_hash(
+        claims: dict,
+        algorithm: str,
+        access_token: str | None,
+    ) -> None:
+        """Validate the optional OIDC at_hash claim against the access token."""
+        expected_hash = claims.get("at_hash")
+        if expected_hash is None:
+            return
+        if not access_token:
+            raise OidcError("OIDC access token required for at_hash validation.")
+        digest = jwt.get_algorithm_by_name(algorithm).compute_hash_digest(
+            access_token.encode()
+        )
+        actual_hash = base64.urlsafe_b64encode(
+            digest[: len(digest) // 2]
+        ).rstrip(b"=").decode()
+        if not hmac.compare_digest(str(expected_hash), actual_hash):
+            raise OidcError("OIDC access token hash validation failed.")
 
     @staticmethod
     def _require_configuration() -> None:

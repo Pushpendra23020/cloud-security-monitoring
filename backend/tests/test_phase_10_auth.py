@@ -1,7 +1,10 @@
+import base64
+import hashlib
 from uuid import uuid4
 from unittest.mock import AsyncMock, patch
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
@@ -15,7 +18,7 @@ from app.database.models.user import User
 from app.database.session import SessionLocal
 from app.main import app
 from app.services.mfa_service import MfaService
-from app.services.oidc_service import OidcService
+from app.services.oidc_service import OidcError, OidcService
 
 client = TestClient(app)
 
@@ -97,6 +100,26 @@ def test_oidc_start_uses_signed_transaction_cookie(monkeypatch):
     assert "cloud_sentinel_oidc=signed-transaction" in cookie
     assert "HttpOnly" in cookie
     assert "SameSite=lax" in cookie
+
+
+def test_oidc_access_token_hash_is_verified():
+    access_token = "test-oidc-access-token"
+    digest = hashlib.sha256(access_token.encode()).digest()
+    token_hash = base64.urlsafe_b64encode(
+        digest[: len(digest) // 2]
+    ).rstrip(b"=").decode()
+
+    OidcService._validate_access_token_hash(
+        {"at_hash": token_hash},
+        "RS256",
+        access_token,
+    )
+    with pytest.raises(OidcError, match="hash validation"):
+        OidcService._validate_access_token_hash(
+            {"at_hash": "incorrect"},
+            "RS256",
+            access_token,
+        )
 
 
 def test_oidc_callback_signs_in_preprovisioned_identity(monkeypatch):

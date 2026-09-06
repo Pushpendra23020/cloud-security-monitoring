@@ -7,7 +7,8 @@ import string
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import InvalidTokenError
 
 from app.config import settings
 
@@ -98,7 +99,7 @@ def decode_access_token(token: str) -> dict:
         if payload.get("type") != "access" or not payload.get("sub"):
             raise TokenError("Invalid access token.")
         return payload
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise TokenError("Invalid or expired access token.") from exc
 
 
@@ -131,5 +132,5 @@ def decode_mfa_challenge_token(token: str) -> dict:
         if payload.get("type") != "mfa_challenge" or not payload.get("sub"):
             raise TokenError("Invalid MFA challenge.")
         return payload
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         raise TokenError("Invalid or expired MFA challenge.") from exc
