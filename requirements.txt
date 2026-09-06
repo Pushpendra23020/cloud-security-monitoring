@@ -57,7 +57,7 @@ packaging==26.2
 paramiko==4.0.0
 pefile==2024.8.26
 pexpect==4.9.0
-pillow==12.2.0
+pillow==12.3.0
 prompt_toolkit==3.0.52
 protobuf==4.21.12
 psutil==7.1.0
